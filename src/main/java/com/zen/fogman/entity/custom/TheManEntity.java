@@ -120,7 +120,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         controllers.add(new AnimationController<>(this,"Standing",5,this::idleAnimController));
         controllers.add(new AnimationController<>(this,"Running",5,this::runAnimController));
     }
-
+    
     @Override
     public void tick() {
         super.tick();
