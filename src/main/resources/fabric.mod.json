@@ -1,0 +1,40 @@
+{
+	"schemaVersion": 1,
+	"id": "man",
+	"version": "${version}",
+	"name": "Man From The Fog",
+	"description": "creepy black guy real",
+	"authors": [
+		"Zen"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "MIT",
+	"icon": "assets/man-from-the-fog/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.zen.fogman.ManFromTheFog"
+		],
+		"client": [
+			"com.zen.fogman.ManFromTheFogClient"
+		],
+		"fabric-datagen": [
+			"com.zen.fogman.ManFromTheFogDataGenerator"
+		]
+	},
+	"mixins": [
+		"man-from-the-fog.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.15.11",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
