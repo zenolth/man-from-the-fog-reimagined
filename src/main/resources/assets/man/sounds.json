@@ -24,5 +24,11 @@
       "man:mansounds/spotted3",
       "man:mansounds/spotted4"
     ]
+  },
+  "man_idlecalm": {
+    "sounds": [
+      "man:mansounds/idlecalm1",
+      "man:mansounds/idlecalm2"
+    ]
   }
 }

@@ -113,11 +113,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.goalSelector.add(1, new MeleeAttackGoal(this, 1.0, false));
         this.goalSelector.add(1, new BreakDoorInstantGoal(this));
 
-        this.goalSelector.add(3, new WanderNearTargetGoal(this, 0.7, 100.0f));
-        this.goalSelector.add(3, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
-        this.goalSelector.add(3, new WanderAroundFarGoal(this, 1.0));
+        this.goalSelector.add(2, new WanderNearTargetGoal(this, 0.7, 200.0f));
+        this.goalSelector.add(2, new WanderAroundFarGoal(this, 1.0));
 
-        this.goalSelector.add(4, new MoveThroughVillageGoal(this, 1.0, false, 4, this::canBreakDoors));
+        this.goalSelector.add(3, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
+        this.goalSelector.add(3, new GoToVillageGoal(this,1000));
+
         this.goalSelector.add(4, new LookAroundGoal(this));
 
         // Targets
@@ -188,6 +189,15 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public void playSpottedSound() {
         this.playSound(ModSounds.MAN_SPOT,this.getSoundVolume(),this.getSoundPitch());
+    }
+
+    @Nullable
+    @Override
+    protected SoundEvent getAmbientSound() {
+        if (getTarget() != null) {
+            return null;
+        }
+        return ModSounds.MAN_IDLECALM;
     }
 
     @Override
