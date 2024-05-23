@@ -2,6 +2,7 @@ package com.zen.fogman;
 
 import com.zen.fogman.entity.ModEntities;
 import com.zen.fogman.item.ModItems;
+import com.zen.fogman.sounds.ModSounds;
 import net.fabricmc.api.ModInitializer;
 
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ public class ManFromTheFog implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		ModSounds.registerSounds();
 		ModItems.registerModItems();
 		ModEntities.registerEntities();
 	}
