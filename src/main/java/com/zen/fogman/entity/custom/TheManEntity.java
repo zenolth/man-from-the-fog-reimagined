@@ -20,14 +20,18 @@ import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.passive.GolemEntity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.BlockStateRaycastContext;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 import org.joml.Vector3f;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -38,6 +42,8 @@ import software.bernie.geckolib.core.animation.AnimationState;
 import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
+
+import java.util.Objects;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
 
@@ -55,7 +61,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     protected EntityNavigation createNavigation(World world) {
-        SpiderNavigation nav = new SpiderNavigation(this,world);
+        MobNavigation nav = new MobNavigation(this,world);
         nav.setCanEnterOpenDoors(true);
         nav.setCanWalkOverFences(true);
         nav.setCanEnterOpenDoors(true);
@@ -76,7 +82,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.goalSelector.add(3, new AvoidSunlightGoal(this));
         this.goalSelector.add(3, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
         this.goalSelector.add(3, new WanderAroundFarGoal(this, 1.0));
-        this.goalSelector.add(3, new MoveThroughVillageGoal(this, 1.0, false, 4, this::canBreakDoors));
+        this.goalSelector.add(4, new MoveThroughVillageGoal(this, 1.0, false, 4, this::canBreakDoors));
         this.goalSelector.add(4, new LookAroundGoal(this));
 
         this.targetSelector.add(1, new ActiveTargetGoal<>(this, PlayerEntity.class, false));
@@ -115,28 +121,38 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return PlayState.STOP;
     }
 
+    public boolean isHeadBanging() {
+        BlockStateRaycastContext blockStateRaycastContext = new BlockStateRaycastContext(getPos(),getPos().add(0,3,0),BlockStatePredicate.ANY);
+        BlockHitResult blockHitResult = getWorld().raycast(blockStateRaycastContext);
+        return blockHitResult.isInsideBlock();
+    }
+
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this,"Standing",5,this::idleAnimController));
         controllers.add(new AnimationController<>(this,"Running",5,this::runAnimController));
     }
-    
+
     @Override
     public void tick() {
         super.tick();
         if (!this.getWorld().isClient) {
             LivingEntity target = getTarget();
-            ManFromTheFog.LOGGER.info(String.valueOf(this.lookDirection));
-            if (this.horizontalCollision && target != null && target.getBlockY() > getBlockY()) {
-                //Vec3d lookDir = new Vec3d(lookControl.getLookX(),lookControl.getLookY(),lookControl.getLookZ()).normalize();
-                Vector3f moveDir = this.getMovementDirection().getUnitVector().normalize();
-                Vec3d newVelocity;
-                if (this.verticalCollision) {
-                    newVelocity = new Vec3d(0,MAN_CLIMB_SPEED * 2,-moveDir.z);
-                } else {
-                    newVelocity = new Vec3d(0,MAN_CLIMB_SPEED,0);
+            if (target != null) {
+                if (
+                        this.horizontalCollision &&
+                                this.getBlockY() <= target.getBlockY()
+                ) {
+                    //Vec3d lookDir = new Vec3d(lookControl.getLookX(),lookControl.getLookY(),lookControl.getLookZ()).normalize();
+                    Vec3d dir = new Vec3d(0, 0, 1).rotateY((float)Math.toRadians(this.getYaw())).normalize();
+                    Vec3d newVelocity;
+                    if (isHeadBanging()) {
+                        newVelocity = new Vec3d(0, MAN_CLIMB_SPEED * 1.5, -dir.z);
+                    } else {
+                        newVelocity = new Vec3d(0, MAN_CLIMB_SPEED, 0);
+                    }
+                    setVelocity(newVelocity);
                 }
-                setVelocity(newVelocity);
             }
         }
     }

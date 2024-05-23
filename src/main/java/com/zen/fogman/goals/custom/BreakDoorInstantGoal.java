@@ -4,6 +4,7 @@ import java.util.function.Predicate;
 
 import com.zen.fogman.ManFromTheFog;
 import net.minecraft.block.Block;
+import net.minecraft.block.DoorBlock;
 import net.minecraft.entity.ai.goal.DoorInteractGoal;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.world.Difficulty;
@@ -20,7 +21,11 @@ public class BreakDoorInstantGoal
     @Override
     public void tick() {
         super.tick();
-        this.mob.getWorld().removeBlock(this.doorPos, false);
+        if (this.canStart()) {
+            this.mob.getWorld().removeBlock(this.doorPos, false);
+            this.mob.getWorld().syncWorldEvent(WorldEvents.ZOMBIE_BREAKS_WOODEN_DOOR, this.doorPos, 0);
+            this.mob.getWorld().syncWorldEvent(WorldEvents.BLOCK_BROKEN, this.doorPos, Block.getRawIdFromState(this.mob.getWorld().getBlockState(this.doorPos)));
+        }
     }
 }
 
