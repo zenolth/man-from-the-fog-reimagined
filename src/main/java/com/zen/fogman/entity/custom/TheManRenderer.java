@@ -4,6 +4,7 @@ import com.zen.fogman.ManFromTheFog;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.util.Identifier;
 import software.bernie.geckolib.model.DefaultedEntityGeoModel;
+import software.bernie.geckolib.renderer.DynamicGeoEntityRenderer;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 import software.bernie.geckolib.renderer.layer.AutoGlowingGeoLayer;
 
@@ -11,10 +12,10 @@ public class TheManRenderer extends GeoEntityRenderer<TheManEntity> {
     public TheManRenderer(EntityRendererFactory.Context context) {
         super(
                 context,
-                new DefaultedEntityGeoModel<>(new Identifier(ManFromTheFog.MOD_ID,"fogman"),true)
+                new DefaultedEntityGeoModel<>(new Identifier(ManFromTheFog.MOD_ID,"fogman"),false)
         );
-        scaleWidth = 8;
-        scaleHeight = 8;
-        addRenderLayer(new AutoGlowingGeoLayer(this));
+        //scaleWidth = 8;
+        //scaleHeight = 8;
+        addRenderLayer(new AutoGlowingGeoLayer<>(this));
     }
 }

@@ -1,5 +1,6 @@
 {
   "man_pain": {
+    "subtitle": "subtitles.man.man_pain",
     "sounds": [
       "man:mansounds/pain1",
       "man:mansounds/pain2",
@@ -8,6 +9,7 @@
     ]
   },
   "man_attack": {
+    "subtitle": "subtitles.man.man_attack",
     "sounds": [
       "man:mansounds/attack1",
       "man:mansounds/attack2",
@@ -18,6 +20,7 @@
     ]
   },
   "man_spot": {
+    "subtitle": "subtitles.man.man_spot",
     "sounds": [
       "man:mansounds/spotted1",
       "man:mansounds/spotted2",
@@ -26,9 +29,25 @@
     ]
   },
   "man_idlecalm": {
+    "subtitle": "subtitles.man.man_idlecalm",
     "sounds": [
       "man:mansounds/idlecalm1",
       "man:mansounds/idlecalm2"
+    ]
+  },
+  "man_death": {
+    "subtitle": "subtitles.man.man_death",
+    "sounds": [
+      "man:mansounds/death1",
+      "man:mansounds/death2",
+      "man:mansounds/death3",
+      "man:mansounds/death4"
+    ]
+  },
+  "man_chase": {
+    "sounds": [
+      "man:mansounds/chase1",
+      "man:mansounds/chase2"
     ]
   }
 }

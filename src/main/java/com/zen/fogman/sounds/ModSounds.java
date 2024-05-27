@@ -18,10 +18,18 @@ public class ModSounds {
     public static final Identifier MAN_IDLECALM_ID = new Identifier("man:man_idlecalm");
     public static SoundEvent MAN_IDLECALM = SoundEvent.of(MAN_IDLECALM_ID);
 
+    public static final Identifier MAN_CHASE_ID = new Identifier("man:man_chase");
+    public static SoundEvent MAN_CHASE = SoundEvent.of(MAN_CHASE_ID);
+
+    public static final Identifier MAN_DEATH_ID = new Identifier("man:man_death");
+    public static SoundEvent MAN_DEATH = SoundEvent.of(MAN_DEATH_ID);
+
     public static void registerSounds() {
         Registry.register(Registries.SOUND_EVENT,MAN_PAIN_ID,MAN_PAIN);
         Registry.register(Registries.SOUND_EVENT,MAN_ATTACK_ID,MAN_ATTACK);
         Registry.register(Registries.SOUND_EVENT,MAN_SPOT_ID,MAN_SPOT);
         Registry.register(Registries.SOUND_EVENT,MAN_IDLECALM_ID,MAN_IDLECALM);
+        Registry.register(Registries.SOUND_EVENT,MAN_CHASE_ID,MAN_CHASE);
+        Registry.register(Registries.SOUND_EVENT,MAN_DEATH_ID,MAN_DEATH);
     }
 }

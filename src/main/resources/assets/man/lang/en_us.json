@@ -1,5 +1,10 @@
 {
   "item.man.tear_of_the_man": "Tear Of The Man",
   "item.man.fogman_spawn_egg": "The Man Spawn Egg",
-  "entity.man.man_from_the_fog": "Man From The Fog"
+  "entity.man.man_from_the_fog": "Man From The Fog",
+  "subtitles.man.man_pain": "Something hurts",
+  "subtitles.man.man_attack": "Something attacks",
+  "subtitles.man.man_spot": "Something spots someone",
+  "subtitles.man.man_idlecalm": "Something growls",
+  "subtitles.man.man_death": "Something dies"
 }
