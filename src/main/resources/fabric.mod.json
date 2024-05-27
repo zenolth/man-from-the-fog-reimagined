@@ -3,16 +3,16 @@
 	"id": "man",
 	"version": "${version}",
 	"name": "Man From The Fog",
-	"description": "creepy black guy real",
+	"description": "...",
 	"authors": [
 		"Zen"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/z3n01d/man-from-the-fog-reimagined",
+		"sources": "https://github.com/z3n01d/man-from-the-fog-reimagined"
 	},
 	"license": "GPL-3.0",
-	"icon": "assets/man-from-the-fog/icon.png",
+	"icon": "assets/man/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [

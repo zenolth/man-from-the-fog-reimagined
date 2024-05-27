@@ -50,7 +50,7 @@ public class ManFromTheFog implements ModInitializer {
 				return;
 			}
 			if (serverWorld.getTime() - lastRandomTime > 1) {
-				if (random.nextInt(0,400) >= 250) {
+				if (random.nextInt(0,400) == 250) {
 					ServerPlayerEntity player = serverWorld.getRandomAlivePlayer();
 					if (player == null) {
 						LOGGER.info("No player found");
