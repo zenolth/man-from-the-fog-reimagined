@@ -16,7 +16,7 @@ import net.minecraft.util.Identifier;
 public class ModEntities {
     public static final EntityType<TheManEntity> THE_MAN = Registry.register(
             Registries.ENTITY_TYPE,
-            new Identifier(ManFromTheFog.MOD_ID, "man_from_the_fog"),
+            new Identifier(ManFromTheFog.MOD_ID, "the_man"),
             FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, TheManEntity::new).dimensions(EntityDimensions.fixed(0.6f, 1.3f)).build()
     );
 

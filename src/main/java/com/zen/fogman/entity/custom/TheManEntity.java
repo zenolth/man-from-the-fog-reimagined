@@ -1,16 +1,17 @@
 package com.zen.fogman.entity.custom;
 
 import com.zen.fogman.ManFromTheFog;
-import com.zen.fogman.entity.ModEntities;
 import com.zen.fogman.goals.custom.BreakDoorInstantGoal;
-import com.zen.fogman.goals.custom.ManChasePlayerGoal;
+import com.zen.fogman.goals.custom.ManChaseGoal;
+import com.zen.fogman.goals.custom.ManStalkGoal;
+import com.zen.fogman.goals.custom.ManStareGoal;
 import com.zen.fogman.item.ModItems;
+import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
-import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.ai.pathing.SpiderNavigation;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -28,23 +29,15 @@ import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
-import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.*;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3f;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
@@ -55,7 +48,6 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
@@ -63,7 +55,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     private static final TrackedData<Byte> MAN_FLAGS = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BYTE);
     private static final float field_30498 = 0.5f;
 
-    public static final double MAN_SPEED = 0.55;
+    public static final double MAN_SPEED = 0.45;
 
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
     protected static final RawAnimation RUN_ANIM = RawAnimation.begin().thenLoop("run");
@@ -76,8 +68,40 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     private long aliveTime;
     private long lastTime;
 
+    public ManState state = ManState.STALK;
+
     public TheManEntity(EntityType<? extends TheManEntity> entityType, World world) {
         super(entityType, world);
+    }
+
+    public void onSpawn() {
+        this.doLightning();
+        this.setLastTime(MathUtils.tickToSec(getWorld().getTime()));
+        this.setAliveTime(this.timeRandom.nextLong(30,120));
+
+        switch(random.nextBetween(0,1)) {
+            case 0:
+                this.updateState(ManState.STARE);
+            case 1:
+                this.updateState(ManState.STALK);
+        }
+    }
+
+    @Override
+    public void onSpawnPacket(EntitySpawnS2CPacket packet) {
+        super.onSpawnPacket(packet);
+        if (packet.getEntityData() == 0) {
+            this.onSpawn();
+        }
+    }
+
+    public void updateState(ManState newState) {
+        this.state = newState;
+        ManFromTheFog.LOGGER.info("The Man is now in {} state", newState);
+    }
+
+    public ManState getState() {
+        return this.state;
     }
 
     public static void addDarknessToClosePlayers(ServerWorld world, Vec3d pos, @Nullable Entity entity, int range) {
@@ -88,28 +112,16 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     @Override
     protected void initGoals() {
         // Goals
-        this.goalSelector.add(1, new MeleeAttackGoal(this, 1.0, false));
+        this.goalSelector.add(1, new ManChaseGoal(this, 1.0));
+        this.goalSelector.add(1, new ManStareGoal(this));
+        this.goalSelector.add(1, new ManStalkGoal(this, 0.65));
 
         this.goalSelector.add(2, new BreakDoorInstantGoal(this));
-        this.goalSelector.add(2, new WanderNearTargetGoal(this, 0.7, 200.0f));
-        this.goalSelector.add(2, new WanderAroundFarGoal(this, 1.0));
-
-        this.goalSelector.add(3, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
-        this.goalSelector.add(3, new GoToVillageGoal(this,1000));
-
-        this.goalSelector.add(4, new LookAroundGoal(this));
 
         // Targets
         this.targetSelector.add(1, new ActiveTargetGoal<>(this, PlayerEntity.class, false));
 
-        this.targetSelector.add(2, new ActiveTargetGoal<>(this, GolemEntity.class, false));
-
-        this.targetSelector.add(3, new ActiveTargetGoal<>(this, MerchantEntity.class, false));
-        this.targetSelector.add(3, new ActiveTargetGoal<>(this, PatrolEntity.class, false));
-
-        this.targetSelector.add(7, new ActiveTargetGoal<>(this, AnimalEntity.class, false));
-        //this.targetSelector.add(7, new ActiveTargetGoal<>(this, ZombieEntity.class, false));
-        //this.targetSelector.add(7, new ActiveTargetGoal<>(this, AbstractSkeletonEntity.class, false));
+        //this.targetSelector.add(7, new ActiveTargetGoal<>(this, AnimalEntity.class, false));
     }
 
     @Override
@@ -125,7 +137,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE,5)
                 .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK,2)
                 .add(EntityAttributes.GENERIC_ATTACK_SPEED,0.9)
-                .add(EntityAttributes.GENERIC_FOLLOW_RANGE,75)
+                .add(EntityAttributes.GENERIC_FOLLOW_RANGE,300)
                 .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE,100)
                 .add(EntityAttributes.GENERIC_ARMOR,7)
                 .add(EntityAttributes.GENERIC_ARMOR_TOUGHNESS,5);
@@ -218,6 +230,16 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     @Override
     public boolean canUsePortals() {
         return false;
+    }
+
+    @Override
+    public boolean canAvoidTraps() {
+        return true;
+    }
+
+    @Override
+    public boolean canMoveVoluntarily() {
+        return !getWorld().isClient();
     }
 
     @Override
@@ -315,7 +337,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         if (!this.getWorld().isClient()) {
             this.setClimbingWall(this.horizontalCollision && getTarget() != null && getTarget().getBlockY() > getBlockY());
 
-            if (isAlive() && ((aliveTime > 0 && getWorld().getTime() - lastTime > aliveTime) || (getTarget() != null && getTarget().isDead())) && getRandom().nextBetween(0,7) == 6) {
+            if (isAlive() && ((aliveTime > 0 && MathUtils.tickToSec(getWorld().getTime()) - lastTime > aliveTime) || (getTarget() != null && getTarget().isDead())) && getRandom().nextBetween(0,7) == 6) {
                 begone();
             }
             if (getHealth() < getMaxHealth() && isAlive() && getWorld().isNight()) {
@@ -347,7 +369,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         if (getWorld().isClient()) {
             return;
         }
-        addDarknessToClosePlayers((ServerWorld) getWorld(),this.getPos(),this,40);
+        addDarknessToClosePlayers((ServerWorld) getWorld(),this.getPos(),this,20);
     }
 
     @Override

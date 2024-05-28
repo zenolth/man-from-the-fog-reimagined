@@ -1,0 +1,10 @@
+{
+  "item.the_fog_is_coming.tear_of_the_man": "Tear Of The Man",
+  "item.the_fog_is_coming.fogman_spawn_egg": "The Man Spawn Egg",
+  "entity.the_fog_is_coming.the_man": "The Man",
+  "subtitles.the_fog_is_coming.man_pain": "Something hurts",
+  "subtitles.the_fog_is_coming.man_attack": "Something attacks",
+  "subtitles.the_fog_is_coming.man_spot": "Something spots someone",
+  "subtitles.the_fog_is_coming.man_idlecalm": "Something growls",
+  "subtitles.the_fog_is_coming.man_death": "Something dies"
+}

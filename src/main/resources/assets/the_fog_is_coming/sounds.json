@@ -1,0 +1,53 @@
+{
+  "man_pain": {
+    "subtitle": "subtitles.the_fog_is_coming.man_pain",
+    "sounds": [
+      "the_fog_is_coming:mansounds/pain1",
+      "the_fog_is_coming:mansounds/pain2",
+      "the_fog_is_coming:mansounds/pain3",
+      "the_fog_is_coming:mansounds/pain4"
+    ]
+  },
+  "man_attack": {
+    "subtitle": "subtitles.the_fog_is_coming.man_attack",
+    "sounds": [
+      "the_fog_is_coming:mansounds/attack1",
+      "the_fog_is_coming:mansounds/attack2",
+      "the_fog_is_coming:mansounds/attack3",
+      "the_fog_is_coming:mansounds/attack4",
+      "the_fog_is_coming:mansounds/attack5",
+      "the_fog_is_coming:mansounds/attack6"
+    ]
+  },
+  "man_spot": {
+    "subtitle": "subtitles.the_fog_is_coming.man_spot",
+    "sounds": [
+      "the_fog_is_coming:mansounds/spotted1",
+      "the_fog_is_coming:mansounds/spotted2",
+      "the_fog_is_coming:mansounds/spotted3",
+      "the_fog_is_coming:mansounds/spotted4"
+    ]
+  },
+  "man_idlecalm": {
+    "subtitle": "subtitles.the_fog_is_coming.man_idlecalm",
+    "sounds": [
+      "the_fog_is_coming:mansounds/idlecalm1",
+      "the_fog_is_coming:mansounds/idlecalm2"
+    ]
+  },
+  "man_death": {
+    "subtitle": "subtitles.the_fog_is_coming.man_death",
+    "sounds": [
+      "the_fog_is_coming:mansounds/death1",
+      "the_fog_is_coming:mansounds/death2",
+      "the_fog_is_coming:mansounds/death3",
+      "the_fog_is_coming:mansounds/death4"
+    ]
+  },
+  "man_chase": {
+    "sounds": [
+      "the_fog_is_coming:mansounds/chase1",
+      "the_fog_is_coming:mansounds/chase2"
+    ]
+  }
+}
