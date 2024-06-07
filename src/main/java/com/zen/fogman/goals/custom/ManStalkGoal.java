@@ -1,6 +1,7 @@
 
 package com.zen.fogman.goals.custom;
 
+import com.ibm.icu.impl.duration.impl.Utils;
 import com.zen.fogman.ManFromTheFog;
 import com.zen.fogman.entity.custom.ManState;
 import com.zen.fogman.entity.custom.TheManEntity;
@@ -11,6 +12,7 @@ import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.EnumSet;
@@ -30,6 +32,9 @@ public class ManStalkGoal extends Goal {
 
     @Override
     public boolean canStart() {
+        if (this.mob.getState() != ManState.STALK) {
+            return false;
+        }
         LivingEntity livingEntity = this.mob.getTarget();
         if (livingEntity == null) {
             return false;
@@ -46,11 +51,17 @@ public class ManStalkGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
+        if (this.mob.getState() != ManState.STALK) {
+            return false;
+        }
         LivingEntity livingEntity = this.mob.getTarget();
         if (livingEntity == null) {
             return false;
         }
         if (!livingEntity.isAlive()) {
+            return false;
+        }
+        if (!this.mob.isInWalkTargetRange(livingEntity.getBlockPos())) {
             return false;
         }
         return !(livingEntity instanceof PlayerEntity) || !livingEntity.isSpectator() && !((PlayerEntity)livingEntity).isCreative();
@@ -88,12 +99,9 @@ public class ManStalkGoal extends Goal {
 
         this.mob.getLookControl().lookAt(livingEntity, 30.0f, 30.0f);
 
-        if (MathUtils.tickToSec(this.mob.getWorld().getTime()) - this.lastMoveTime > 0.1) {
+        if (MathUtils.tickToSec(this.mob.getWorld().getTime()) - this.lastMoveTime > 0.05) {
             this.mob.getNavigation().startMovingTo(livingEntity, this.speed);
             this.lastMoveTime = MathUtils.tickToSec(this.mob.getWorld().getTime());
-        }
-        if (MathUtils.distanceTo(this.mob,livingEntity) <= 15) {
-            this.mob.updateState(ManState.CHASE);
         }
     }
 

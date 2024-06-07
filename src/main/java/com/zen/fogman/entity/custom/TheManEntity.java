@@ -1,6 +1,8 @@
 package com.zen.fogman.entity.custom;
 
 import com.zen.fogman.ManFromTheFog;
+import com.zen.fogman.damage_type.ModDamageTypes;
+import com.zen.fogman.goals.ManGoalSelector;
 import com.zen.fogman.goals.custom.BreakDoorInstantGoal;
 import com.zen.fogman.goals.custom.ManChaseGoal;
 import com.zen.fogman.goals.custom.ManStalkGoal;
@@ -9,6 +11,9 @@ import com.zen.fogman.item.ModItems;
 import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
@@ -16,6 +21,7 @@ import net.minecraft.entity.ai.pathing.SpiderNavigation;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -28,13 +34,19 @@ import net.minecraft.entity.passive.GolemEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.DyeableArmorItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.*;
 import org.jetbrains.annotations.Nullable;
@@ -47,13 +59,11 @@ import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
-
-    private static final TrackedData<Byte> MAN_FLAGS = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BYTE);
-    private static final float field_30498 = 0.5f;
 
     public static final double MAN_SPEED = 0.45;
 
@@ -68,7 +78,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     private long aliveTime;
     private long lastTime;
 
-    public ManState state = ManState.STALK;
+    private int targetFOV = 90;
+
+    public ManState state = ManState.STARE;
 
     public TheManEntity(EntityType<? extends TheManEntity> entityType, World world) {
         super(entityType, world);
@@ -79,10 +91,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.setLastTime(MathUtils.tickToSec(getWorld().getTime()));
         this.setAliveTime(this.timeRandom.nextLong(30,120));
 
-        switch(random.nextBetween(0,1)) {
+        switch(random.nextBetween(0,2)) {
             case 0:
                 this.updateState(ManState.STARE);
             case 1:
+                this.updateState(ManState.STALK);
+            case 2:
                 this.updateState(ManState.STALK);
         }
     }
@@ -95,9 +109,23 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
+    @Override
+    public Iterable<ItemStack> getArmorItems() {
+        ItemStack itemStack = new ItemStack(Items.LEATHER_BOOTS,1);
+        itemStack.addEnchantment(Enchantments.DEPTH_STRIDER,3);
+        DyeableArmorItem item = (DyeableArmorItem) itemStack.getItem();
+
+
+        return Collections.singleton(itemStack);
+    }
+
     public void updateState(ManState newState) {
+        if (newState == ManState.CHASE) {
+            this.doLightning();
+        }
         this.state = newState;
         ManFromTheFog.LOGGER.info("The Man is now in {} state", newState);
+        this.goalSelector.tick();
     }
 
     public ManState getState() {
@@ -113,8 +141,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     protected void initGoals() {
         // Goals
         this.goalSelector.add(1, new ManChaseGoal(this, 1.0));
-        this.goalSelector.add(1, new ManStareGoal(this));
         this.goalSelector.add(1, new ManStalkGoal(this, 0.65));
+        this.goalSelector.add(1, new ManStareGoal(this));
 
         this.goalSelector.add(2, new BreakDoorInstantGoal(this));
 
@@ -127,7 +155,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     @Override
     protected void initDataTracker() {
         super.initDataTracker();
-        this.dataTracker.startTracking(MAN_FLAGS, (byte)0);
     }
 
     public static DefaultAttributeContainer.Builder createManAttributes() {
@@ -135,9 +162,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 .add(EntityAttributes.GENERIC_MAX_HEALTH,350)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED,MAN_SPEED)
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE,5)
-                .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK,2)
-                .add(EntityAttributes.GENERIC_ATTACK_SPEED,0.9)
-                .add(EntityAttributes.GENERIC_FOLLOW_RANGE,300)
+                .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK,4)
+                .add(EntityAttributes.GENERIC_ATTACK_SPEED,1.0)
+                .add(EntityAttributes.GENERIC_FOLLOW_RANGE,300000)
                 .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE,100)
                 .add(EntityAttributes.GENERIC_ARMOR,7)
                 .add(EntityAttributes.GENERIC_ARMOR_TOUGHNESS,5);
@@ -200,21 +227,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return event.setAndContinue(RUN_ANIM);
         }
         return PlayState.STOP;
-    }
-
-    public boolean isClimbingWall() {
-        return (this.dataTracker.get(MAN_FLAGS) & 1) != 0;
-    }
-
-    @Override
-    public boolean isClimbing() {
-        return isClimbingWall();
-    }
-
-    public void setClimbingWall(boolean climbing) {
-        byte b = this.dataTracker.get(MAN_FLAGS);
-        b = climbing ? (byte)(b | 1) : (byte)(b & 0xFFFFFFFE);
-        this.dataTracker.set(MAN_FLAGS, b);
     }
 
     @Override
@@ -332,10 +344,23 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     @Override
+    public boolean isClimbing() {
+        return this.horizontalCollision && getTarget() != null && getTarget().getBlockY() > getBlockY();
+    }
+
+    @Override
     public void tick() {
         super.tick();
+        if (getWorld().isClient() && getTarget() != null && getTarget() instanceof PlayerEntity) {
+            this.targetFOV = MinecraftClient.getInstance().options.getFov().getValue();
+        }
         if (!this.getWorld().isClient()) {
-            this.setClimbingWall(this.horizontalCollision && getTarget() != null && getTarget().getBlockY() > getBlockY());
+            if (isClimbing()) {
+                //Vec3d oldVelocity = getVelocity();
+                Vec3d toPlayerDirection = getTarget().getPos().subtract(getPos()).normalize().multiply(2.0);
+                Vec3d newVelocity = new Vec3d(toPlayerDirection.getX(),1.0,toPlayerDirection.getZ());
+                setVelocity(newVelocity);
+            }
 
             if (isAlive() && ((aliveTime > 0 && MathUtils.tickToSec(getWorld().getTime()) - lastTime > aliveTime) || (getTarget() != null && getTarget().isDead())) && getRandom().nextBetween(0,7) == 6) {
                 begone();
@@ -351,6 +376,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                     this.setHealth(5);
                 }
                 this.setOnFireFor(60);
+            }
+
+            if (getTarget() != null && getTarget().isPlayer() && (getState() == ManState.STALK || getState() == ManState.STARE) && MathUtils.distanceTo(this,getTarget()) <= 15) {
+                updateState(ManState.CHASE);
             }
 
             if (getTarget() != null && !didTarget) {
@@ -392,10 +421,22 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
-    @Override
+    /*@Override
     public boolean tryAttack(Entity target) {
         this.playSound(ModSounds.MAN_ATTACK,this.getSoundVolume(),this.getSoundPitch());
         return super.tryAttack(target);
+    }*/
+
+    @Override
+    public boolean tryAttack(Entity target) {
+        float damage = (float) this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
+        float knockback = (float) this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_KNOCKBACK);
+        this.playSound(ModSounds.MAN_ATTACK,this.getSoundVolume(),this.getSoundPitch());
+        if (knockback > 0.0f && target instanceof LivingEntity) {
+            ((LivingEntity)target).takeKnockback(knockback * 0.5f, MathHelper.sin(this.getYaw() * ((float)Math.PI / 180)), -MathHelper.cos(this.getYaw() * ((float)Math.PI / 180)));
+            this.setVelocity(this.getVelocity().multiply(0.6, 1.0, 0.6));
+        }
+        return target.damage(this.getDamageSources().mobAttack(this), damage);
     }
 
     @Override
@@ -419,5 +460,21 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     @Override
     public AnimatableInstanceCache getAnimatableInstanceCache() {
         return this.geoCache;
+    }
+
+    public boolean isLookedAt() {
+        if (getTarget() == null) {
+            return false;
+        }
+        if (getTarget() instanceof PlayerEntity player) {
+            if (!getWorld().isClient()) {
+                
+                Vec3d lookVector = player.getRotationVec(1.0f).normalize();
+                Vec3d direction = new Vec3d(this.getX() - player.getX(), this.getEyeY() - player.getEyeY(), this.getZ() - player.getZ());
+                double e = lookVector.dotProduct(direction.normalize());
+                return e > Math.cos(Math.toRadians(this.targetFOV));
+            }
+        }
+        return false;
     }
 }

@@ -16,4 +16,7 @@ public class MathUtils {
     public static long secToTick(long secs) {
         return secs * 20;
     }
+    public static double angleBetween(double x1,double y1,double x2,double y2) {
+        return Math.atan2(y1 - y2,x1 - x2);
+    }
 }

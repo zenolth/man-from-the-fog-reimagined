@@ -51,8 +51,8 @@ public class ManFromTheFog implements ModInitializer {
 						LOGGER.info("No player found");
 						return;
 					}
-					int xOffset = random.nextBoolean() ? 60 : -60;
-					int zOffset = random.nextBoolean() ? 60 : -60;
+					int xOffset = (random.nextBoolean() ? 1 : -1) * random.nextInt(20,60);
+					int zOffset = (random.nextBoolean() ? 1 : -1) * random.nextInt(20,60);
 					Vec3d spawnPosition = serverWorld.getTopPosition(Heightmap.Type.WORLD_SURFACE,player.getBlockPos().add(xOffset,0,zOffset)).toCenterPos();
 					TheManEntity man = new TheManEntity(ModEntities.THE_MAN,serverWorld);
 					man.setPosition(spawnPosition);

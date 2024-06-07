@@ -17,37 +17,30 @@ import java.util.EnumSet;
 public class ManStareGoal extends Goal {
     protected final TheManEntity mob;
 
+    private boolean wasLooking = false;
+    private long stareTime;
+
     public ManStareGoal(TheManEntity mob) {
         this.mob = mob;
-        this.setControls(EnumSet.of(Control.LOOK));
+        this.stareTime = MathUtils.tickToSec(this.mob.getWorld().getTime());
+        this.setControls(EnumSet.of(Control.LOOK, Control.TARGET));
     }
 
     @Override
     public boolean canStart() {
-        LivingEntity livingEntity = this.mob.getTarget();
-        if (livingEntity == null) {
-            return false;
-        }
-        return livingEntity.isAlive();
+        return this.mob.getState() == ManState.STARE;
     }
 
     @Override
     public boolean shouldContinue() {
-        LivingEntity livingEntity = this.mob.getTarget();
-        if (livingEntity == null) {
-            return false;
-        }
-        if (!livingEntity.isAlive()) {
-            return false;
-        }
-        return !(livingEntity instanceof PlayerEntity) || !livingEntity.isSpectator() && !((PlayerEntity)livingEntity).isCreative();
+        return this.mob.getState() == ManState.STARE;
     }
 
     @Override
     public void stop() {
         LivingEntity livingEntity = this.mob.getTarget();
         if (!EntityPredicates.EXCEPT_CREATIVE_OR_SPECTATOR.test(livingEntity)) {
-            this.mob.setTarget(null);
+            //this.mob.setTarget(null);
         }
     }
 
@@ -67,11 +60,25 @@ public class ManStareGoal extends Goal {
             return;
         }
 
-        this.mob.getLookControl().lookAt(livingEntity, 30.0f, 30.0f);
+        ManFromTheFog.LOGGER.info(String.valueOf(this.mob.isLookedAt()));
 
-        if (MathUtils.distanceTo(this.mob,livingEntity) <= 15) {
-            this.mob.updateState(ManState.CHASE);
+        if (this.mob.isLookedAt() && !this.wasLooking) {
+            this.wasLooking = true;
         }
+
+        if (this.wasLooking && !this.mob.isLookedAt()) {
+            this.mob.discard();
+        }
+
+        if (this.mob.isLookedAt()) {
+            if (MathUtils.tickToSec(this.mob.getWorld().getTime()) - this.stareTime > 15.0) {
+                this.mob.updateState(ManState.CHASE);
+            }
+        } else {
+            this.stareTime = MathUtils.tickToSec(this.mob.getWorld().getTime());
+        }
+
+        this.mob.getLookControl().lookAt(livingEntity, 30.0f, 30.0f);
     }
 }
 

@@ -29,6 +29,9 @@ public class ManChaseGoal extends Goal {
 
     @Override
     public boolean canStart() {
+        if (this.mob.getState() != ManState.CHASE) {
+            return false;
+        }
         LivingEntity livingEntity = this.mob.getTarget();
         if (livingEntity == null) {
             return false;
@@ -45,11 +48,17 @@ public class ManChaseGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
+        if (this.mob.getState() != ManState.CHASE) {
+            return false;
+        }
         LivingEntity livingEntity = this.mob.getTarget();
         if (livingEntity == null) {
             return false;
         }
         if (!livingEntity.isAlive()) {
+            return false;
+        }
+        if (!this.mob.isInWalkTargetRange(livingEntity.getBlockPos())) {
             return false;
         }
         return !(livingEntity instanceof PlayerEntity) || !livingEntity.isSpectator() && !((PlayerEntity)livingEntity).isCreative();
@@ -79,9 +88,6 @@ public class ManChaseGoal extends Goal {
 
     @Override
     public void tick() {
-        if (this.mob.getState() != ManState.CHASE) {
-            return;
-        }
         LivingEntity livingEntity = this.mob.getTarget();
 
         if (livingEntity == null) {
@@ -92,7 +98,7 @@ public class ManChaseGoal extends Goal {
 
         this.mob.getLookControl().lookAt(livingEntity, 30.0f, 30.0f);
 
-        if (MathUtils.tickToSec(this.mob.getWorld().getTime()) - this.lastMoveTime > 0.1) {
+        if (MathUtils.tickToSec(this.mob.getWorld().getTime()) - this.lastMoveTime > 0.05) {
             this.mob.getNavigation().startMovingTo(livingEntity, this.speed);
             this.lastMoveTime = MathUtils.tickToSec(this.mob.getWorld().getTime());
         }

@@ -1,7 +1,25 @@
 # Man From The Fog
-The Man is a creature which stalks you from the fog at night, he preys on most living things, but his biggest interest is humans
-# Behavior
-This creature has a fairly advanced AI, he can climb walls, get through tight spaces, and it knows what it wants
-# WARNING : THIS MOD IS STILL WIP AND EVERYTHING IS SUBJECT TO CHANGE, BUGS MAY OCCUR, IF YOU FIND ANY, REPORT THEM ON GITHUB ISSUES, THANK YOU
-![Requires Geckolib](https://camo.githubusercontent.com/56f1b4c1016d7698f0bf00e1305c1a22123d819a8fb43181d8cb8139b0d3136d/68747470733a2f2f692e696d6775722e636f6d2f4b42396b5259562e706e67)
-# IF YOU MAKE A FORK OF THIS MOD IT'S A REQUIREMENT TO CREDIT THE AUTHOR (ME)
+Mod which adds a creepy creature, which stalks you in the night and preys on you.
+## What does it do?
+Minecraft is not a horror game, but what if it was? This mod's creature, called The Man, which will scare your socks off by being surprising and unexpected, it was inspired by The Man From The Fog by Ma_Do, the main reason I did this, is balancing issues in the original, it was first intended to be only a rewrite, but I decided to also make a new model and change the sounds, trying to make it as creepy and frightening as possible
+
+## Features :
+- Advanced AI
+- Different behaviors
+- Unexpected actions
+- New model
+- New sounds
+
+## Installation :
+Installation of this mod is as simple as dropping it into your client/server mod folder, both sides must have this mod installed, it also requires GeckoLib so don't forget to install it
+
+## Compatibility :
+This mod should be compatible with every mod.
+- Maybe compatible with [The Man From The Fog - Fabric](https://modrinth.com/mod/the-man-from-the-fog-fabric), but they may attack each other.
+
+## Warning : This mod is not finished and is still in it's alpha stage, it may have some bugs so if you find some, open a GitHub issue
+
+## Donations
+If you want to leave a tip for my work, you can do so by [buying me a coffee](https://ko-fi.com/zenold), it's not mandatory and doesn't give any benefits, it's just a good little gesture :)
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P5P0Z1ZER)
