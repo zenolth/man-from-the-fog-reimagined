@@ -46,8 +46,7 @@
   },
   "man_chase": {
     "sounds": [
-      "the_fog_is_coming:mansounds/chase1",
-      "the_fog_is_coming:mansounds/chase2"
+      "the_fog_is_coming:mansounds/chase1"
     ]
   }
 }
