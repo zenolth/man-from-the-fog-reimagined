@@ -71,7 +71,7 @@ public class ManStareGoal extends Goal {
         }
 
         if (this.mob.isLookedAt()) {
-            if (MathUtils.tickToSec(this.mob.getWorld().getTime()) - this.stareTime > 15.0) {
+            if (MathUtils.tickToSec(this.mob.getWorld().getTime()) - this.stareTime > 7.0) {
                 this.mob.updateState(ManState.CHASE);
             }
         } else {

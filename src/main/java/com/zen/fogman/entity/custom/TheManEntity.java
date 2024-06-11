@@ -1,8 +1,6 @@
 package com.zen.fogman.entity.custom;
 
 import com.zen.fogman.ManFromTheFog;
-import com.zen.fogman.damage_type.ModDamageTypes;
-import com.zen.fogman.goals.ManGoalSelector;
 import com.zen.fogman.goals.custom.BreakDoorInstantGoal;
 import com.zen.fogman.goals.custom.ManChaseGoal;
 import com.zen.fogman.goals.custom.ManStalkGoal;
@@ -12,7 +10,9 @@ import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.sound.*;
@@ -20,37 +20,25 @@ import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
-import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.ai.pathing.SpiderNavigation;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.damage.DamageTypes;
-import net.minecraft.entity.data.DataTracker;
-import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.*;
-import net.minecraft.entity.passive.AnimalEntity;
-import net.minecraft.entity.passive.GolemEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
-import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.DyeableArmorItem;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -71,7 +59,8 @@ import java.util.Random;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
 
-    public static final double MAN_SPEED = 0.7;
+    public static final double MAN_SPEED = 0.56;
+    public static final double MAN_MAX_SCAN_DISTANCE = 100000.0;
 
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
     protected static final RawAnimation RUN_ANIM = RawAnimation.begin().thenLoop("run");
@@ -79,54 +68,33 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
 
-    private boolean didTarget = false;
+    private boolean climbing = false;
 
-    public final Random timeRandom = new Random();
+    public final Random random2 = new Random();
     private long aliveTime;
     private long lastTime;
 
     private int targetFOV = 90;
 
-    private int ticksUntilChaseSound = 0;
-
-    public ManState state = ManState.STALK;
+    public ManState state = ManState.IDLE;
 
     public EntityTrackingSoundInstance chaseSoundInstance;
 
     public TheManEntity(EntityType<? extends TheManEntity> entityType, World world) {
         super(entityType, world);
-        chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,SoundCategory.MASTER,1.0f,1.0f,this,this.getWorld().getTime());
-    }
 
-    public void onSpawn() {
-        this.doLightning();
         this.setLastTime(MathUtils.tickToSec(getWorld().getTime()));
-        this.setAliveTime(this.timeRandom.nextLong(30,60));
+        this.setAliveTime(this.random2.nextLong(30,60));
 
-        switch(random.nextBetween(0,2)) {
-            case 0:
-                this.updateState(ManState.STARE);
-            case 1:
-                this.updateState(ManState.STALK);
-            case 2:
-                this.updateState(ManState.STALK);
-        }
-    }
-
-    @Override
-    public void onSpawnPacket(EntitySpawnS2CPacket packet) {
-        super.onSpawnPacket(packet);
-        if (packet.getEntityData() == 0) {
-            this.onSpawn();
-        }
+        this.updateState(ManState.values()[random2.nextInt(2,3)]);
+        ClientTickEvents.END_CLIENT_TICK.register(s -> this.clientTick());
+        chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,SoundCategory.MASTER,0.6f,1.0f,this,this.getWorld().getTime());
     }
 
     @Override
     public Iterable<ItemStack> getArmorItems() {
         ItemStack itemStack = new ItemStack(Items.LEATHER_BOOTS,1);
         itemStack.addEnchantment(Enchantments.DEPTH_STRIDER,3);
-        DyeableArmorItem item = (DyeableArmorItem) itemStack.getItem();
-
 
         return Collections.singleton(itemStack);
     }
@@ -184,7 +152,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE,5)
                 .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK,4)
                 .add(EntityAttributes.GENERIC_ATTACK_SPEED,1.0)
-                .add(EntityAttributes.GENERIC_FOLLOW_RANGE,300000)
+                .add(EntityAttributes.GENERIC_FOLLOW_RANGE,MAN_MAX_SCAN_DISTANCE)
                 .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE,100)
                 .add(EntityAttributes.GENERIC_ARMOR,7)
                 .add(EntityAttributes.GENERIC_ARMOR_TOUGHNESS,5);
@@ -235,31 +203,21 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return nav;
     }
 
-    protected <E extends TheManEntity> PlayState idleAnimController(final AnimationState<E> event) {
-        if (isClimbing()) {
-            return PlayState.STOP;
-        }
-        if (!event.isMoving()) {
-            return event.setAndContinue(IDLE_ANIM);
-        }
-        return PlayState.STOP;
-    }
-
-    protected <E extends TheManEntity> PlayState runAnimController(final AnimationState<E> event) {
-        if (isClimbing()) {
-            return PlayState.STOP;
-        }
-        if (event.isMoving() && !isClimbing()) {
-            return event.setAndContinue(RUN_ANIM);
-        }
-        return PlayState.STOP;
-    }
-
-    protected <E extends TheManEntity> PlayState climbAnimController(final AnimationState<E> event) {
-        if (isClimbing()) {
+    private PlayState predictate(AnimationState event) {
+        if (this.isClimbing()) {
             return event.setAndContinue(CLIMB_ANIM);
         }
-        return PlayState.STOP;
+
+        if (event.isMoving()) {
+            return event.setAndContinue(RUN_ANIM);
+        }
+
+        return event.setAndContinue(IDLE_ANIM);
+    }
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>(this,"controller",0,this::predictate));
     }
 
     @Override
@@ -300,13 +258,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 effect.getEffectType() != StatusEffects.INVISIBILITY &&
                 effect.getEffectType() != StatusEffects.WEAKNESS &&
                 (getWorld().isDay() && effect.getEffectType() != StatusEffects.REGENERATION);
-    }
-
-    @Override
-    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this,"Standing",5,this::idleAnimController));
-        controllers.add(new AnimationController<>(this,"Running",5,this::runAnimController));
-        controllers.add(new AnimationController<>(this,"Climbing",5,this::climbAnimController));
     }
 
     public void playSpottedSound() {
@@ -395,15 +346,14 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return;
         }
 
-        if (MathUtils.distanceTo(this,player) <= 15 && getState() == ManState.CHASE) {
-            if (this.ticksUntilChaseSound <= 0) {
+        if (MathUtils.distanceTo(this,player) <= 200 && getState() == ManState.CHASE) {
+            if (!client.getSoundManager().isPlaying(chaseSoundInstance)) {
                 client.getSoundManager().play(chaseSoundInstance);
-                this.ticksUntilChaseSound = 2740;
             }
-            this.ticksUntilChaseSound--;
         } else {
-            client.getSoundManager().stopSounds(ModSounds.MAN_CHASE_ID,this.getSoundCategory());
-            this.ticksUntilChaseSound = 0;
+            if (client.getSoundManager().isPlaying(chaseSoundInstance)) {
+                client.getSoundManager().stop(chaseSoundInstance);
+            }
         }
     }
 
@@ -414,7 +364,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_SPOT_ID,this.getSoundCategory());
     }
 
-    @Environment(EnvType.CLIENT)
     public void clientTick() {
         if (getTarget() != null && getTarget() instanceof PlayerEntity) {
             MinecraftClient client = MinecraftClient.getInstance();
@@ -425,22 +374,32 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         playChaseSound();
     }
-
+    
     public void serverTick() {
-        addEffectsToClosePlayers((ServerWorld) getWorld(),this.getPos(),this,20);
+        setTarget(getWorld().getClosestPlayer(this.getX(),this.getY(),this.getZ(),MAN_MAX_SCAN_DISTANCE,true));
+
+        if (getState() == ManState.CHASE && getTarget() != null) {
+            addEffectsToClosePlayers((ServerWorld) getWorld(),this.getPos(),this,20);
+        }
+
+        if (this.isSubmergedInWater()) {
+            Vec3d oldVelocity = this.getVelocity();
+            setVelocity(oldVelocity.getX(),0.5,oldVelocity.getZ());
+        }
 
         if (this.isDead()) {
             this.stopSounds();
             return;
         }
 
+        this.climbing = isClimbing();
+
         if (isClimbing()) {
-            //Vec3d oldVelocity = getVelocity();
             Vec3d newVelocity = new Vec3d(0,0.5,0);
             setVelocity(newVelocity);
         }
 
-        if (isAlive() && ((aliveTime > 0 && MathUtils.tickToSec(getWorld().getTime()) - lastTime > aliveTime && !isLookedAt()) || (getTarget() != null && getTarget().isDead()))) {
+        if (isAlive() && ((aliveTime > 0 && MathUtils.tickToSec(getWorld().getTime()) - lastTime > aliveTime) || (getTarget() != null && getTarget().isDead()))) {
             begone();
         }
         if (getHealth() < getMaxHealth() && isAlive() && getWorld().isNight()) {
@@ -464,7 +423,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     @Override
     protected void mobTick() {
         chaseSoundInstance.tick();
-        this.clientTick();
+        //this.clientTick();
         this.serverTick();
     }
 

@@ -40,7 +40,7 @@ public class ManFromTheFog implements ModInitializer {
 			if (serverWorld.isDay()) {
 				return;
 			}
-			List<? extends TheManEntity> entities = serverWorld.getEntitiesByType(ModEntities.THE_MAN, EntityPredicates.VALID_LIVING_ENTITY);
+			List<? extends TheManEntity> entities = serverWorld.getEntitiesByType(ModEntities.THE_MAN, entity -> entity.isAlive() && entity instanceof LivingEntity);
 			if (!entities.isEmpty()) {
 				return;
 			}

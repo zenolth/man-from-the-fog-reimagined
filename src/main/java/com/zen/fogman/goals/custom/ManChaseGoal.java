@@ -12,6 +12,7 @@ import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.Vec3d;
 
 public class ManChaseGoal extends Goal {
     protected final TheManEntity mob;
@@ -19,11 +20,14 @@ public class ManChaseGoal extends Goal {
     private Path path;
     private int cooldown;
     private long lastMoveTime;
+    private long lastLungeTime;
+    private boolean didLunge = false;
 
     public ManChaseGoal(TheManEntity mob, double speed) {
         this.mob = mob;
         this.speed = speed;
         this.lastMoveTime = MathUtils.tickToSec(this.mob.getWorld().getTime());
+        this.lastLungeTime = MathUtils.tickToSec(this.mob.getWorld().getTime());
         this.setControls(EnumSet.of(Control.MOVE, Control.LOOK, Control.JUMP, Control.TARGET));
     }
 
@@ -86,25 +90,44 @@ public class ManChaseGoal extends Goal {
         return true;
     }
 
+    public void doLunge(LivingEntity target) {
+        Vec3d toTarget = target.getPos().subtract(this.mob.getPos()).add(0,1,0).multiply(0.3,0.2,0.3);
+        this.mob.setVelocity(toTarget);
+    }
+
     @Override
     public void tick() {
-        LivingEntity livingEntity = this.mob.getTarget();
+        LivingEntity target = this.mob.getTarget();
 
-        if (livingEntity == null) {
+        if (target == null) {
             return;
         }
 
-        double d = this.mob.getSquaredDistanceToAttackPosOf(livingEntity);
+        double d = this.mob.getSquaredDistanceToAttackPosOf(target);
 
-        this.mob.getLookControl().lookAt(livingEntity, 30.0f, 30.0f);
+        if (this.mob.getRandom().nextBetween(0,201) == 150 && !didLunge) {
+            didLunge = true;
+            doLunge(target);
+        }
+
+        if (didLunge) {
+            if (MathUtils.tickToSec(this.mob.getWorld().getTime()) - this.lastLungeTime > 20) {
+                didLunge = false;
+                this.lastLungeTime = MathUtils.tickToSec(this.mob.getWorld().getTime());
+            }
+        } else {
+            this.lastLungeTime = MathUtils.tickToSec(this.mob.getWorld().getTime());
+        }
+
+        this.mob.getLookControl().lookAt(target, 30.0f, 30.0f);
 
         if (MathUtils.tickToSec(this.mob.getWorld().getTime()) - this.lastMoveTime > 0.05) {
-            this.mob.getNavigation().startMovingTo(livingEntity, this.speed);
+            this.mob.getNavigation().startMovingTo(target, this.speed);
             this.lastMoveTime = MathUtils.tickToSec(this.mob.getWorld().getTime());
         }
 
         this.cooldown = Math.max(this.cooldown - 1, 0);
-        this.attack(livingEntity, d);
+        this.attack(target, d);
     }
 
     protected void attack(LivingEntity target, double squaredDistance) {
