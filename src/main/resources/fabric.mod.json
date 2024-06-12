@@ -8,8 +8,9 @@
 		"Zen"
 	],
 	"contact": {
-		"homepage": "https://github.com/z3n01d/man-from-the-fog-reimagined",
-		"sources": "https://github.com/z3n01d/man-from-the-fog-reimagined"
+		"homepage": "https://modrinth.com/mod/man-from-the-fog-reimagined",
+		"sources": "https://github.com/z3n01d/man-from-the-fog-reimagined",
+		"issues": "https://github.com/z3n01d/man-from-the-fog-reimagined/issues"
 	},
 	"license": "GPL-3.0",
 	"icon": "assets/the_fog_is_coming/icon.png",
@@ -35,7 +36,7 @@
 		"fabric-api": "*",
 		"geckolib": "*"
 	},
-	"breaks": {
+	"conflicts": {
 		"the-man-from-the-fog-fabric": "*"
 	},
 	"suggests": {

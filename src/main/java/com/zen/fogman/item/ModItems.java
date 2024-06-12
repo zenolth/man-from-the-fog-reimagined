@@ -25,12 +25,18 @@ public class ModItems {
             new SpawnEggItem(ModEntities.THE_MAN,0xc4c4c4, 0xadadad, new FabricItemSettings())
     );
 
+    public static final Item THE_MAN_HALLUCINATION_SPAWN_EGG = registerItem(
+            "fogman_trippy_spawn_egg",
+            new SpawnEggItem(ModEntities.THE_MAN_HALLUCINATION,0xc4c4c4, 0xadadad, new FabricItemSettings())
+    );
+
     private static void addItemsToIngredientItemsGroup(FabricItemGroupEntries entries) {
         entries.add(TEAR_OF_THE_MAN);
     }
 
     private static void addItemsToSpawnEggsGroup(FabricItemGroupEntries entries) {
         entries.add(THE_MAN_SPAWN_EGG);
+        entries.add(THE_MAN_HALLUCINATION_SPAWN_EGG);
     }
 
     private static void addItemsToFunctionalItemsGroup(FabricItemGroupEntries entries) {

@@ -91,6 +91,7 @@ public class ManChaseGoal extends Goal {
     }
 
     public void doLunge(LivingEntity target) {
+        this.mob.playLungeSound();
         Vec3d toTarget = target.getPos().subtract(this.mob.getPos()).add(0,1,0).multiply(0.3,0.2,0.3);
         this.mob.setVelocity(toTarget);
     }
@@ -105,7 +106,7 @@ public class ManChaseGoal extends Goal {
 
         double d = this.mob.getSquaredDistanceToAttackPosOf(target);
 
-        if (this.mob.getRandom().nextBetween(0,201) == 150 && !didLunge) {
+        if (this.mob.random2.nextFloat(0f,1f) < 0.25 && !didLunge) {
             didLunge = true;
             doLunge(target);
         }

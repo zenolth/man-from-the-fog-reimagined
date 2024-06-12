@@ -4,6 +4,7 @@ import com.zen.fogman.entity.ModEntities;
 import com.zen.fogman.entity.custom.ManState;
 import com.zen.fogman.entity.custom.TheManEntity;
 import com.zen.fogman.item.ModItems;
+import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
 import net.fabricmc.api.ModInitializer;
 
@@ -40,12 +41,12 @@ public class ManFromTheFog implements ModInitializer {
 			if (serverWorld.isDay()) {
 				return;
 			}
-			List<? extends TheManEntity> entities = serverWorld.getEntitiesByType(ModEntities.THE_MAN, entity -> entity.isAlive() && entity instanceof LivingEntity);
+			List<? extends TheManEntity> entities = serverWorld.getEntitiesByType(ModEntities.THE_MAN, EntityPredicates.VALID_LIVING_ENTITY);
 			if (!entities.isEmpty()) {
 				return;
 			}
-			if (serverWorld.getTime() - lastRandomTime > 1) {
-				if (random.nextInt(0,401) == 400) {
+			if (MathUtils.tickToSec(serverWorld.getTime()) - lastRandomTime > 1) {
+				if (random.nextFloat(0f,1f) < 0.05) {
 					ServerPlayerEntity player = serverWorld.getRandomAlivePlayer();
 					if (player == null) {
 						LOGGER.info("No player found");
@@ -60,7 +61,7 @@ public class ManFromTheFog implements ModInitializer {
 					serverWorld.spawnEntity(man);
 					LOGGER.info("Spawned The Man");
 				}
-				lastRandomTime = serverWorld.getTime();
+				lastRandomTime = MathUtils.tickToSec(serverWorld.getTime());
 			}
 		});
 	}

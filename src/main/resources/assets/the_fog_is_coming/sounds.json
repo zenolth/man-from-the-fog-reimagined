@@ -48,5 +48,11 @@
     "sounds": [
       "the_fog_is_coming:mansounds/chase1"
     ]
+  },
+  "man_lunge": {
+    "subtitle": "subtitles.the_fog_is_coming.man_lunge",
+    "sounds": [
+      "the_fog_is_coming:mansounds/lunge"
+    ]
   }
 }
