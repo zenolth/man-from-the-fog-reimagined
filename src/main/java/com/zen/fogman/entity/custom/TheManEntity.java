@@ -9,11 +9,8 @@ import com.zen.fogman.goals.custom.ManStareGoal;
 import com.zen.fogman.item.ModItems;
 import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.sound.*;
@@ -31,15 +28,14 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.*;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.DyeableArmorItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -55,11 +51,17 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
+
+    public enum ManState {
+        IDLE,
+        CHASE,
+        STARE,
+        STALK
+    }
 
     public static final double MAN_SPEED = 0.56;
     public static final double MAN_MAX_SCAN_DISTANCE = 100000.0;
@@ -71,10 +73,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
 
-    private boolean climbing = false;
-
     public final Random random2 = new Random();
-    private long aliveTime;
+    public long aliveTime;
     private long lastTime;
 
     private long lastHallucinationTime;
@@ -97,6 +97,22 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,SoundCategory.MASTER,0.6f,1.0f,this,this.getWorld().getTime());
     }
 
+    /**
+     * @param serverWorld The World to check
+     * @return If any TheManEntityHallucination exist in serverWorld
+     */
+    public static boolean hallucinationsExist(ServerWorld serverWorld) {
+        return !serverWorld.getEntitiesByType(ModEntities.THE_MAN_HALLUCINATION,EntityPredicates.VALID_LIVING_ENTITY).isEmpty();
+    }
+
+    /**
+     * @param serverWorld The World to check
+     * @return If any TheManEntity exist in serverWorld
+     */
+    public static boolean manExist(ServerWorld serverWorld) {
+        return !serverWorld.getEntitiesByType(ModEntities.THE_MAN,EntityPredicates.VALID_LIVING_ENTITY).isEmpty();
+    }
+
     @Override
     public Iterable<ItemStack> getArmorItems() {
         ItemStack itemStack = new ItemStack(Items.LEATHER_BOOTS,1);
@@ -110,6 +126,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return super.getSoundCategory();
     }
 
+    /**
+     * Changes The Man's state to one of the ManStates
+     * @param newState The new state for The Man
+     */
     public void updateState(ManState newState) {
         if (newState == ManState.CHASE) {
             this.playSpottedSound();
@@ -164,6 +184,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 .add(EntityAttributes.GENERIC_ARMOR_TOUGHNESS,5);
     }
 
+    /**
+     * Spawns a lightning at The Man's position
+     */
     public void doLightning() {
         if (!this.getWorld().isClient()) {
             ServerWorld serverWorld = (ServerWorld) this.getWorld();
@@ -183,8 +206,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
         if (!this.getWorld().isClient()) {
             ServerWorld serverWorld = (ServerWorld) this.getWorld();
-            List<?> entities = serverWorld.getEntitiesByType(this.getType(), EntityPredicates.VALID_LIVING_ENTITY);
-            return entities.isEmpty();
+            return TheManEntity.manExist((ServerWorld) this.getWorld());
         }
         return super.canSpawn(world);
     }
@@ -199,6 +221,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return nav;
     }
 
+    // Animations
     private PlayState predictate(AnimationState event) {
         if (this.isClimbing()) {
             return event.setAndContinue(CLIMB_ANIM);
@@ -216,6 +239,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         controllers.add(new AnimationController<>(this,"controller",0,this::predictate));
     }
 
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return this.geoCache;
+    }
+
+    // Properties (or "can" stuff)
     @Override
     public boolean canFreeze() {
         return false;
@@ -256,48 +285,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 (getWorld().isDay() && effect.getEffectType() != StatusEffects.REGENERATION);
     }
 
-    public void playSpottedSound() {
-        this.playSound(ModSounds.MAN_SPOT,this.getSoundVolume(),this.getSoundPitch());
-    }
-
-    @Override
-    public void slowMovement(BlockState state, Vec3d multiplier) {
-
-    }
-
-    @Nullable
-    @Override
-    protected SoundEvent getAmbientSound() {
-        if (this.getTarget() != null) {
-            return null;
-        }
-        return ModSounds.MAN_IDLECALM;
-    }
-
-    @Override
-    protected SoundEvent getHurtSound(DamageSource source) {
-        return ModSounds.MAN_PAIN;
-    }
-
-    @Override
-    protected SoundEvent getDeathSound() {
-        return ModSounds.MAN_DEATH;
-    }
-
-    @Override
-    public void playAmbientSound() {
-        SoundEvent soundEvent = this.getAmbientSound();
-        float soundVolume;
-        if (this.getTarget() == null) {
-            soundVolume = this.getSoundVolume();
-        } else {
-            soundVolume = 10;
-        }
-        if (soundEvent != null) {
-            this.playSound(soundEvent, soundVolume, 1);
-        }
-    }
-
     @Override
     protected void dropInventory() {
         if (getWorld().isDay()) {
@@ -319,51 +306,32 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         super.dropXp();
     }
 
+    /**
+     * Despawns The Man, spawns a lightning and stops all sounds
+     */
     public void begone() {
         this.doLightning();
         this.stopSounds();
         this.discard();
     }
 
+    // Other mechanics
     @Override
     public boolean isClimbing() {
         return this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY();
     }
 
-    public void playChaseSound() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (this.isDead()) {
-            return;
-        }
-
-        ClientPlayerEntity player = client.player;
-
-        if (player == null) {
-            return;
-        }
-
-        if (MathUtils.distanceTo(this,player) <= MAN_CHASE_DISTANCE && this.getState() == ManState.CHASE) {
-            if (!client.getSoundManager().isPlaying(chaseSoundInstance)) {
-                client.getSoundManager().play(chaseSoundInstance);
-            }
-        } else {
-            if (client.getSoundManager().isPlaying(chaseSoundInstance)) {
-                client.getSoundManager().stop(chaseSoundInstance);
-            }
-        }
-    }
-
-    public void stopSounds() {
-        MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_ATTACK_ID,this.getSoundCategory());
-        MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_CHASE_ID,this.getSoundCategory());
-        MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_IDLECALM_ID,this.getSoundCategory());
-        MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_SPOT_ID,this.getSoundCategory());
-    }
-
+    /**
+     * Spawns hallucinations randomly around The Man
+     */
     public void spawnHallucinations() {
+        if (this.getState() != ManState.CHASE) {
+            return;
+        }
+
         ServerWorld serverWorld = (ServerWorld) this.getWorld();
 
-        if (!serverWorld.getEntitiesByType(ModEntities.THE_MAN_HALLUCINATION,EntityPredicates.VALID_LIVING_ENTITY).isEmpty()) {
+        if (TheManEntity.hallucinationsExist(serverWorld)) {
             return;
         }
 
@@ -379,6 +347,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
+    // Ticks
     public void clientTick() {
         if (this.getTarget() != null && this.getTarget() instanceof PlayerEntity) {
             MinecraftClient client = MinecraftClient.getInstance();
@@ -418,8 +387,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             this.lastHallucinationTime = MathUtils.tickToSec(this.getWorld().getTime());
         }
 
-        this.climbing = this.isClimbing();
-
         if (this.isClimbing()) {
             Vec3d newVelocity = new Vec3d(0,0.5,0);
             setVelocity(newVelocity);
@@ -453,8 +420,27 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.serverTick();
     }
 
+    // Sounds
+    public void playSpottedSound() {
+        this.playSound(ModSounds.MAN_SPOT,this.getSoundVolume(),this.getSoundPitch());
+    }
+
     public void playLungeSound() {
         this.playSound(ModSounds.MAN_LUNGE,3.0f,this.getSoundPitch());
+    }
+
+    @Override
+    public void playAmbientSound() {
+        SoundEvent soundEvent = this.getAmbientSound();
+        float soundVolume;
+        if (this.getTarget() == null) {
+            soundVolume = this.getSoundVolume();
+        } else {
+            soundVolume = 10;
+        }
+        if (soundEvent != null) {
+            this.playSound(soundEvent, soundVolume, 1);
+        }
     }
 
     @Override
@@ -477,12 +463,62 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
-    /*@Override
-    public boolean tryAttack(Entity target) {
-        this.playSound(ModSounds.MAN_ATTACK,this.getSoundVolume(),this.getSoundPitch());
-        return super.tryAttack(target);
-    }*/
+    @Nullable
+    @Override
+    protected SoundEvent getAmbientSound() {
+        if (this.getTarget() != null) {
+            return null;
+        }
+        return ModSounds.MAN_IDLECALM;
+    }
 
+    @Override
+    protected SoundEvent getHurtSound(DamageSource source) {
+        return ModSounds.MAN_PAIN;
+    }
+
+    @Override
+    protected SoundEvent getDeathSound() {
+        return ModSounds.MAN_DEATH;
+    }
+
+    /**
+     * Plays the chase theme
+     */
+    public void playChaseSound() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (this.isDead()) {
+            return;
+        }
+
+        ClientPlayerEntity player = client.player;
+
+        if (player == null) {
+            return;
+        }
+
+        if (MathUtils.distanceTo(this,player) <= MAN_CHASE_DISTANCE && this.getState() == ManState.CHASE) {
+            if (!client.getSoundManager().isPlaying(chaseSoundInstance)) {
+                client.getSoundManager().play(chaseSoundInstance);
+            }
+        } else {
+            if (client.getSoundManager().isPlaying(chaseSoundInstance)) {
+                client.getSoundManager().stop(chaseSoundInstance);
+            }
+        }
+    }
+
+    /**
+     * Stops all sounds being played by The Man
+     */
+    public void stopSounds() {
+        MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_ATTACK_ID,this.getSoundCategory());
+        MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_CHASE_ID,this.getSoundCategory());
+        MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_IDLECALM_ID,this.getSoundCategory());
+        MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_SPOT_ID,this.getSoundCategory());
+    }
+
+    // Attacking and damaging
     @Override
     public boolean tryAttack(Entity target) {
         float damage = (float) this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
@@ -506,6 +542,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return super.damage(source, amount);
     }
 
+    // Movement and jumping
     @Override
     protected float getJumpVelocity() {
         return 0.72f * this.getJumpVelocityMultiplier() + this.getJumpBoostVelocityModifier();
@@ -517,10 +554,14 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     @Override
-    public AnimatableInstanceCache getAnimatableInstanceCache() {
-        return this.geoCache;
+    public void slowMovement(BlockState state, Vec3d multiplier) {
+
     }
 
+    /**
+     * Checks if The Man is being looked at
+     * @return  If The Man is being looked at or not
+     */
     public boolean isLookedAt() {
         if (getTarget() == null) {
             return false;
@@ -531,7 +572,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 Vec3d lookVector = player.getRotationVec(1.0f).normalize();
                 Vec3d direction = new Vec3d(this.getX() - player.getX(), this.getEyeY() - player.getEyeY(), this.getZ() - player.getZ());
                 double e = lookVector.dotProduct(direction.normalize());
-                return e > Math.cos(Math.toRadians(this.targetFOV));
+                return e > Math.cos(Math.toRadians(this.targetFOV)) && this.getWorld().raycast(new RaycastContext(new Vec3d(this.getX(), this.getEyeY(), this.getZ()), new Vec3d(player.getX(), player.getEyeY(), player.getZ()), RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, this)).getType() == HitResult.Type.MISS;
             }
         }
         return false;

@@ -1,9 +1,6 @@
 
 package com.zen.fogman.goals.custom;
 
-import com.ibm.icu.impl.duration.impl.Utils;
-import com.zen.fogman.ManFromTheFog;
-import com.zen.fogman.entity.custom.ManState;
 import com.zen.fogman.entity.custom.TheManEntity;
 import com.zen.fogman.other.MathUtils;
 import net.minecraft.entity.LivingEntity;
@@ -11,9 +8,6 @@ import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.predicate.entity.EntityPredicates;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Util;
-import net.minecraft.util.math.Vec3d;
 
 import java.util.EnumSet;
 
@@ -32,7 +26,7 @@ public class ManStalkGoal extends Goal {
 
     @Override
     public boolean canStart() {
-        if (this.mob.getState() != ManState.STALK) {
+        if (this.mob.getState() != TheManEntity.ManState.STALK) {
             return false;
         }
         LivingEntity livingEntity = this.mob.getTarget();
@@ -51,7 +45,7 @@ public class ManStalkGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
-        if (this.mob.getState() != ManState.STALK) {
+        if (this.mob.getState() != TheManEntity.ManState.STALK) {
             return false;
         }
         LivingEntity livingEntity = this.mob.getTarget();
@@ -88,7 +82,7 @@ public class ManStalkGoal extends Goal {
 
     @Override
     public void tick() {
-        if (this.mob.getState() != ManState.STALK) {
+        if (this.mob.getState() != TheManEntity.ManState.STALK) {
             return;
         }
         LivingEntity livingEntity = this.mob.getTarget();

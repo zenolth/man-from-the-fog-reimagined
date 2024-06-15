@@ -3,7 +3,6 @@ package com.zen.fogman.goals.custom;
 
 import java.util.EnumSet;
 
-import com.zen.fogman.entity.custom.ManState;
 import com.zen.fogman.entity.custom.TheManEntity;
 import com.zen.fogman.other.MathUtils;
 import net.minecraft.entity.LivingEntity;
@@ -33,7 +32,7 @@ public class ManChaseGoal extends Goal {
 
     @Override
     public boolean canStart() {
-        if (this.mob.getState() != ManState.CHASE) {
+        if (this.mob.getState() != TheManEntity.ManState.CHASE) {
             return false;
         }
         LivingEntity livingEntity = this.mob.getTarget();
@@ -52,7 +51,7 @@ public class ManChaseGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
-        if (this.mob.getState() != ManState.CHASE) {
+        if (this.mob.getState() != TheManEntity.ManState.CHASE) {
             return false;
         }
         LivingEntity livingEntity = this.mob.getTarget();
@@ -98,6 +97,10 @@ public class ManChaseGoal extends Goal {
 
     @Override
     public void tick() {
+        if (this.mob.getState() != TheManEntity.ManState.CHASE) {
+            return;
+        }
+
         LivingEntity target = this.mob.getTarget();
 
         if (target == null) {

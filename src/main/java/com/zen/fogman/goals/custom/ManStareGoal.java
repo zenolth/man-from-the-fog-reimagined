@@ -2,15 +2,11 @@
 package com.zen.fogman.goals.custom;
 
 import com.zen.fogman.ManFromTheFog;
-import com.zen.fogman.entity.custom.ManState;
 import com.zen.fogman.entity.custom.TheManEntity;
 import com.zen.fogman.other.MathUtils;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
-import net.minecraft.entity.ai.pathing.Path;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.predicate.entity.EntityPredicates;
-import net.minecraft.util.Hand;
 
 import java.util.EnumSet;
 
@@ -28,12 +24,12 @@ public class ManStareGoal extends Goal {
 
     @Override
     public boolean canStart() {
-        return this.mob.getState() == ManState.STARE;
+        return this.mob.getState() == TheManEntity.ManState.STARE;
     }
 
     @Override
     public boolean shouldContinue() {
-        return this.mob.getState() == ManState.STARE;
+        return this.mob.getState() == TheManEntity.ManState.STARE;
     }
 
     @Override
@@ -51,7 +47,7 @@ public class ManStareGoal extends Goal {
 
     @Override
     public void tick() {
-        if (this.mob.getState() != ManState.STARE) {
+        if (this.mob.getState() != TheManEntity.ManState.STARE) {
             return;
         }
         LivingEntity livingEntity = this.mob.getTarget();
@@ -72,7 +68,7 @@ public class ManStareGoal extends Goal {
 
         if (this.mob.isLookedAt()) {
             if (MathUtils.tickToSec(this.mob.getWorld().getTime()) - this.stareTime > 7.0) {
-                this.mob.updateState(ManState.CHASE);
+                this.mob.updateState(TheManEntity.ManState.CHASE);
             }
         } else {
             this.stareTime = MathUtils.tickToSec(this.mob.getWorld().getTime());

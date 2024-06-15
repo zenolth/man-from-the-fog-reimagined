@@ -4,8 +4,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 
-import java.awt.*;
-
 public class StaticOverlayHud implements HudRenderCallback {
 
     @Override
