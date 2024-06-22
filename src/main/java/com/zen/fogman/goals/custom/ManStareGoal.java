@@ -56,8 +56,6 @@ public class ManStareGoal extends Goal {
             return;
         }
 
-        ManFromTheFog.LOGGER.info(String.valueOf(this.mob.isLookedAt()));
-
         if (this.mob.isLookedAt() && !this.wasLooking) {
             this.wasLooking = true;
         }

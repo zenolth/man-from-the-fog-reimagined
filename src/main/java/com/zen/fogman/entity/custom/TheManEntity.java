@@ -9,11 +9,14 @@ import com.zen.fogman.goals.custom.ManStareGoal;
 import com.zen.fogman.item.ModItems;
 import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.sound.*;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.*;
@@ -32,6 +35,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
@@ -54,7 +58,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Random;
 
-public class TheManEntity extends HostileEntity implements GeoEntity {
+public class TheManEntity extends HostileEntity implements GeoEntity, ClientTickEvents.EndTick {
 
     public enum ManState {
         IDLE,
@@ -93,7 +97,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.aliveTime = this.random2.nextLong(30,60);
 
         this.updateState(ManState.values()[random2.nextInt(2,3)]);
-        ClientTickEvents.END_CLIENT_TICK.register(s -> this.clientTick());
+        ClientTickEvents.END_CLIENT_TICK.register(this::onEndTick);
         this.chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,SoundCategory.MASTER,0.6f,1.0f,this,this.getWorld().getTime());
     }
 
@@ -347,16 +351,32 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
+    @Override
+    public void onEndTick(MinecraftClient client) {
+        ClientWorld world = client.world;
+
+        if (world == null) {
+            return;
+        }
+
+        ClientPlayerEntity player = client.player;
+
+        if (player == null) {
+            return;
+        }
+
+        this.clientTick(client);
+    }
+
     // Ticks
-    public void clientTick() {
+    public void clientTick(MinecraftClient client) {
         if (this.getTarget() != null && this.getTarget() instanceof PlayerEntity) {
-            MinecraftClient client = MinecraftClient.getInstance();
             if (Objects.equals(client.getName(), this.getTarget().getEntityName()) && this.targetFOV != client.options.getFov().getValue()) {
                 this.targetFOV = MinecraftClient.getInstance().options.getFov().getValue();
             }
         }
 
-        this.playChaseSound();
+        this.playChaseSound(client);
     }
     
     public void serverTick() {
@@ -485,8 +505,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     /**
      * Plays the chase theme
      */
-    public void playChaseSound() {
-        MinecraftClient client = MinecraftClient.getInstance();
+    public void playChaseSound(MinecraftClient client) {
         if (this.isDead()) {
             return;
         }

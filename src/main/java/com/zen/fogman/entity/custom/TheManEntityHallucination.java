@@ -1,5 +1,6 @@
 package com.zen.fogman.entity.custom;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.server.world.ServerWorld;
@@ -19,7 +20,7 @@ public class TheManEntityHallucination extends TheManEntity {
     }
 
     @Override
-    public void playChaseSound() {
+    public void playChaseSound(MinecraftClient client) {
 
     }
 
