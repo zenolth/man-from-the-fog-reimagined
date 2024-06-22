@@ -58,7 +58,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Random;
 
-public class TheManEntity extends HostileEntity implements GeoEntity, ClientTickEvents.EndTick {
+public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public enum ManState {
         IDLE,
@@ -97,7 +97,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity, ClientTick
         this.aliveTime = this.random2.nextLong(30,60);
 
         this.updateState(ManState.values()[random2.nextInt(2,3)]);
-        ClientTickEvents.END_CLIENT_TICK.register(this::onEndTick);
         this.chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,SoundCategory.MASTER,0.6f,1.0f,this,this.getWorld().getTime());
     }
 
@@ -351,23 +350,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity, ClientTick
         }
     }
 
-    @Override
-    public void onEndTick(MinecraftClient client) {
-        ClientWorld world = client.world;
-
-        if (world == null) {
-            return;
-        }
-
-        ClientPlayerEntity player = client.player;
-
-        if (player == null) {
-            return;
-        }
-
-        this.clientTick(client);
-    }
-
     // Ticks
     public void clientTick(MinecraftClient client) {
         if (this.getTarget() != null && this.getTarget() instanceof PlayerEntity) {
@@ -435,9 +417,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity, ClientTick
 
     @Override
     protected void mobTick() {
-        this.chaseSoundInstance.tick();
-        //this.clientTick();
-        this.serverTick();
+        if (this.getWorld().isClient()) {
+            this.clientTick(MinecraftClient.getInstance());
+        } else {
+            this.chaseSoundInstance.tick();
+            this.serverTick();
+        }
     }
 
     // Sounds
