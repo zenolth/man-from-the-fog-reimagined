@@ -34,10 +34,7 @@
 		"minecraft": "~1.20.1",
 		"java": ">=17",
 		"fabric-api": "*",
-		"geckolib": "*"
-	},
-	"conflicts": {
-		"the-man-from-the-fog-fabric": "*"
+		"geckolib": ">=4.4.4"
 	},
 	"suggests": {
 

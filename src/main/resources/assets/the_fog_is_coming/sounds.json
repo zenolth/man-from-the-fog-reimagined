@@ -54,5 +54,15 @@
     "sounds": [
       "the_fog_is_coming:mansounds/lunge"
     ]
+  },
+  "man_creepy": {
+    "subtitle": "subtitles.the_fog_is_coming.man_creepy",
+    "sounds": [
+      "the_fog_is_coming:mansounds/creepy1",
+      "the_fog_is_coming:mansounds/creepy2",
+      "the_fog_is_coming:mansounds/creepy3",
+      "the_fog_is_coming:mansounds/creepy4",
+      "the_fog_is_coming:mansounds/creepy5"
+    ]
   }
 }

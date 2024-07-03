@@ -26,7 +26,10 @@ public class ModSounds {
     public static SoundEvent MAN_DEATH = SoundEvent.of(MAN_DEATH_ID);
 
     public static final Identifier MAN_LUNGE_ID = new Identifier(parseName("man_lunge"));
-    public static SoundEvent MAN_LUNGE = SoundEvent.of(MAN_DEATH_ID);
+    public static SoundEvent MAN_LUNGE = SoundEvent.of(MAN_LUNGE_ID);
+
+    public static final Identifier MAN_CREEPY_ID = new Identifier(parseName("man_creepy"));
+    public static SoundEvent MAN_CREEPY = SoundEvent.of(MAN_CREEPY_ID);
 
     public static String parseName(String name) {
         return ManFromTheFog.MOD_ID + ":" + name;
@@ -40,5 +43,6 @@ public class ModSounds {
         Registry.register(Registries.SOUND_EVENT,MAN_CHASE_ID,MAN_CHASE);
         Registry.register(Registries.SOUND_EVENT,MAN_DEATH_ID,MAN_DEATH);
         Registry.register(Registries.SOUND_EVENT,MAN_LUNGE_ID,MAN_LUNGE);
+        Registry.register(Registries.SOUND_EVENT,MAN_CREEPY_ID,MAN_CREEPY);
     }
 }

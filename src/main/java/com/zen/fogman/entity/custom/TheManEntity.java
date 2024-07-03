@@ -3,28 +3,24 @@ package com.zen.fogman.entity.custom;
 import com.zen.fogman.ManFromTheFog;
 import com.zen.fogman.entity.ModEntities;
 import com.zen.fogman.goals.custom.BreakDoorInstantGoal;
-import com.zen.fogman.goals.custom.ManChaseGoal;
-import com.zen.fogman.goals.custom.ManStalkGoal;
-import com.zen.fogman.goals.custom.ManStareGoal;
 import com.zen.fogman.item.ModItems;
 import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.sound.*;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.*;
+import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.ai.pathing.SpiderNavigation;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.effect.StatusEffects;
@@ -35,10 +31,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -55,21 +51,16 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.Collections;
-import java.util.Objects;
 import java.util.Random;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
-
-    public enum ManState {
-        IDLE,
-        CHASE,
-        STARE,
-        STALK
-    }
-
-    public static final double MAN_SPEED = 0.56;
+    public static final double MAN_SPEED = 0.63;
+    public static final double MAN_CLIMB_SPEED = 0.8;
     public static final double MAN_MAX_SCAN_DISTANCE = 100000.0;
     public static final int MAN_CHASE_DISTANCE = 200;
+
+    private static final TrackedData<Boolean> MAN_CHASING_FLAG = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> MAN_CLIMBING_FLAG = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
     protected static final RawAnimation RUN_ANIM = RawAnimation.begin().thenLoop("run");
@@ -85,19 +76,34 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     private int targetFOV = 90;
 
-    public ManState state = ManState.IDLE;
+    private ManState state;
 
     public EntityTrackingSoundInstance chaseSoundInstance;
 
+    private boolean chasing = false;
+
+    // Chase stuff
+    private int cooldown;
+    private long lastMoveTime;
+    private long lastLungeTime;
+    private boolean didLunge = false;
+
+    // Stare stuff
+    private long stareTime;
+
     public TheManEntity(EntityType<? extends TheManEntity> entityType, World world) {
         super(entityType, world);
+
+        this.lastMoveTime = MathUtils.tickToSec(this.getWorld().getTime());
+        this.lastLungeTime = MathUtils.tickToSec(this.getWorld().getTime());
+        this.stareTime = MathUtils.tickToSec(this.getWorld().getTime());
 
         this.lastTime = MathUtils.tickToSec(this.getWorld().getTime());
         this.lastHallucinationTime = MathUtils.tickToSec(this.getWorld().getTime());
         this.aliveTime = this.random2.nextLong(30,60);
 
-        this.updateState(ManState.values()[random2.nextInt(2,3)]);
-        this.chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,SoundCategory.MASTER,0.6f,1.0f,this,this.getWorld().getTime());
+        this.setState(ManState.STARE);
+        this.chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,SoundCategory.HOSTILE,0.6f,1.0f,this,this.getWorld().getTime());
     }
 
     /**
@@ -113,7 +119,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
      * @return If any TheManEntity exist in serverWorld
      */
     public static boolean manExist(ServerWorld serverWorld) {
-        return !serverWorld.getEntitiesByType(ModEntities.THE_MAN,EntityPredicates.VALID_LIVING_ENTITY).isEmpty();
+        return !serverWorld.getEntitiesByType(ModEntities.THE_MAN, EntityPredicates.VALID_LIVING_ENTITY).isEmpty();
     }
 
     @Override
@@ -129,22 +135,26 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return super.getSoundCategory();
     }
 
-    /**
-     * Changes The Man's state to one of the ManStates
-     * @param newState The new state for The Man
-     */
-    public void updateState(ManState newState) {
-        if (newState == ManState.CHASE) {
-            this.playSpottedSound();
-            this.doLightning();
-        }
-        this.state = newState;
-        ManFromTheFog.LOGGER.info("The Man is now in {} state", newState);
-        this.goalSelector.tick();
+    public void setState(ManState state) {
+        this.state = state;
     }
 
     public ManState getState() {
         return this.state;
+    }
+
+    public boolean isState(ManState state) {
+        return this.getState() == state;
+    }
+
+    public boolean isChasing() {
+        return this.dataTracker.get(MAN_CHASING_FLAG);
+    }
+
+    public void startChase() {
+        this.setState(ManState.CHASE);
+        this.playSpottedSound();
+        this.doLightning();
     }
 
     public void addEffectsToClosePlayers(ServerWorld world, Vec3d pos, @Nullable Entity entity, int range) {
@@ -156,12 +166,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     protected void initGoals() {
-        // Goals
-        this.goalSelector.add(1, new ManChaseGoal(this, 1.0));
-        this.goalSelector.add(1, new ManStalkGoal(this, 0.65));
-        this.goalSelector.add(1, new ManStareGoal(this));
-
-        this.goalSelector.add(2, new BreakDoorInstantGoal(this));
+        this.goalSelector.add(1, new BreakDoorInstantGoal(this));
 
         // Targets
         this.targetSelector.add(1, new ActiveTargetGoal<>(this, PlayerEntity.class, false));
@@ -172,6 +177,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     @Override
     protected void initDataTracker() {
         super.initDataTracker();
+        this.dataTracker.startTracking(MAN_CHASING_FLAG,false);
+        this.dataTracker.startTracking(MAN_CLIMBING_FLAG,false);
     }
 
     public static DefaultAttributeContainer.Builder createManAttributes() {
@@ -321,14 +328,20 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     // Other mechanics
     @Override
     public boolean isClimbing() {
-        return this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY();
+        return this.dataTracker.get(MAN_CLIMBING_FLAG);
+    }
+
+    public void doLunge(LivingEntity target) {
+        this.playLungeSound();
+        Vec3d toTarget = target.getPos().subtract(this.getPos()).add(0,1,0).multiply(0.3,0.2,0.3);
+        this.setVelocity(toTarget);
     }
 
     /**
      * Spawns hallucinations randomly around The Man
      */
     public void spawnHallucinations() {
-        if (this.getState() != ManState.CHASE) {
+        if (!this.isState(ManState.CHASE)) {
             return;
         }
 
@@ -350,27 +363,134 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
-    // Ticks
-    public void clientTick(MinecraftClient client) {
-        if (this.getTarget() != null && this.getTarget() instanceof PlayerEntity) {
-            if (Objects.equals(client.getName(), this.getTarget().getEntityName()) && this.targetFOV != client.options.getFov().getValue()) {
+    public void updateTargetFov(MinecraftClient client) {
+        if (client.player.isTarget(this, TargetPredicate.DEFAULT)) {
+            if (this.targetFOV != client.options.getFov().getValue()) {
                 this.targetFOV = MinecraftClient.getInstance().options.getFov().getValue();
             }
         }
-
-        this.playChaseSound(client);
     }
-    
+
+    public void chaseIfTooClose() {
+        if (this.getTarget() != null && this.getTarget().isPlayer() && MathUtils.distanceTo(this,this.getTarget()) <= 15) {
+            this.startChase();
+        }
+    }
+
+    // Ticks
+
+    public void clientTick(MinecraftClient client) {
+        this.updateTargetFov(client);
+        if (this.isChasing()) {
+            this.playChaseSound(client);
+        }
+    }
+
+    public void idleTick() {
+        this.chasing = false;
+    }
+
+    public void chaseTick() {
+        this.chasing = true;
+
+        LivingEntity target = this.getTarget();
+
+        if (target == null) {
+            return;
+        }
+
+        double d = this.getSquaredDistanceToAttackPosOf(target);
+
+        if (this.random2.nextFloat(0f,1f) < 0.25 && !didLunge) {
+            didLunge = true;
+            doLunge(target);
+        }
+
+        if (didLunge) {
+            if (MathUtils.tickToSec(this.getWorld().getTime()) - this.lastLungeTime > 20) {
+                didLunge = false;
+                this.lastLungeTime = MathUtils.tickToSec(this.getWorld().getTime());
+            }
+        } else {
+            this.lastLungeTime = MathUtils.tickToSec(this.getWorld().getTime());
+        }
+
+        this.getLookControl().lookAt(target, 30.0f, 30.0f);
+
+        if (MathUtils.tickToSec(this.getWorld().getTime()) - this.lastMoveTime > 0.05) {
+            this.getNavigation().startMovingTo(target, 1);
+            this.lastMoveTime = MathUtils.tickToSec(this.getWorld().getTime());
+        }
+
+        this.cooldown = Math.max(this.cooldown - 1, 0);
+        this.attack(target,d);
+        this.addEffectsToClosePlayers((ServerWorld) this.getWorld(),this.getPos(),this,MAN_CHASE_DISTANCE);
+    }
+
+    public void stalkTick() {
+        this.chasing = false;
+        LivingEntity livingEntity = this.getTarget();
+
+        if (livingEntity == null) {
+            return;
+        }
+
+        this.getLookControl().lookAt(livingEntity, 30.0f, 30.0f);
+
+        if (MathUtils.tickToSec(this.getWorld().getTime()) - this.lastMoveTime > 0.05) {
+            this.getNavigation().startMovingTo(livingEntity, 0.9);
+            this.lastMoveTime = MathUtils.tickToSec(this.getWorld().getTime());
+        }
+
+        this.chaseIfTooClose();
+    }
+
+    public void stareTick() {
+        this.chasing = false;
+        LivingEntity livingEntity = this.getTarget();
+
+        if (livingEntity == null) {
+            return;
+        }
+
+        if (this.isLookedAt()) {
+            if (MathUtils.tickToSec(this.getWorld().getTime()) - this.stareTime > 7.0) {
+                this.startChase();
+            }
+        } else {
+            this.stareTime = MathUtils.tickToSec(this.getWorld().getTime());
+        }
+
+        this.getLookControl().lookAt(livingEntity, 30.0f, 30.0f);
+
+        this.chaseIfTooClose();
+    }
+
     public void serverTick() {
+
+        switch (this.getState()) {
+            case IDLE:
+                this.idleTick();
+                break;
+            case CHASE:
+                this.chaseTick();
+                break;
+            case STARE:
+                this.stareTick();
+                break;
+            case STALK:
+                this.stalkTick();
+                break;
+        }
+
+        this.dataTracker.set(MAN_CHASING_FLAG,this.chasing);
+        this.dataTracker.set(MAN_CLIMBING_FLAG,this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY());
+
         ServerWorld serverWorld = (ServerWorld) this.getWorld();
 
         this.random2.setSeed(serverWorld.getTime());
 
         this.setTarget(this.getWorld().getClosestPlayer(this.getX(),this.getY(),this.getZ(),MAN_MAX_SCAN_DISTANCE,true));
-
-        if (this.getState() == ManState.CHASE && this.getTarget() != null) {
-            this.addEffectsToClosePlayers(serverWorld,this.getPos(),this,MAN_CHASE_DISTANCE);
-        }
 
         if (this.isSubmergedInWater()) {
             Vec3d oldVelocity = this.getVelocity();
@@ -390,8 +510,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
 
         if (this.isClimbing()) {
-            Vec3d newVelocity = new Vec3d(0,0.5,0);
-            setVelocity(newVelocity);
+            Vec3d toPlayer = this.getTarget().getPos().subtract(this.getPos()).normalize().multiply(0.2);
+            setVelocity(new Vec3d(toPlayer.getX(),1,toPlayer.getZ()).multiply(MAN_CLIMB_SPEED));
         }
 
         if (this.isAlive() && ((aliveTime > 0 && MathUtils.tickToSec(this.getWorld().getTime()) - lastTime > aliveTime) || (this.getTarget() != null && this.getTarget().isDead()))) {
@@ -409,17 +529,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             }
             this.setOnFireFor(60);
         }
-
-        if (this.getTarget() != null && this.getTarget().isPlayer() && (this.getState() == ManState.STALK || this.getState() == ManState.STARE) && MathUtils.distanceTo(this,this.getTarget()) <= 15) {
-            this.updateState(ManState.CHASE);
-        }
     }
 
     @Override
-    protected void mobTick() {
-        if (this.getWorld().isClient()) {
-            this.clientTick(MinecraftClient.getInstance());
-        } else {
+    public void tick() {
+        super.tick();
+        if (!getWorld().isClient) {
             this.chaseSoundInstance.tick();
             this.serverTick();
         }
@@ -495,20 +610,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return;
         }
 
-        ClientPlayerEntity player = client.player;
-
-        if (player == null) {
-            return;
-        }
-
-        if (MathUtils.distanceTo(this,player) <= MAN_CHASE_DISTANCE && this.getState() == ManState.CHASE) {
-            if (!client.getSoundManager().isPlaying(chaseSoundInstance)) {
-                client.getSoundManager().play(chaseSoundInstance);
+        if (MathUtils.distanceTo(this,client.player) <= MAN_CHASE_DISTANCE) {
+            if (!client.getSoundManager().isPlaying(this.chaseSoundInstance)) {
+                client.getSoundManager().play(this.chaseSoundInstance);
             }
         } else {
-            if (client.getSoundManager().isPlaying(chaseSoundInstance)) {
-                client.getSoundManager().stop(chaseSoundInstance);
-            }
+            client.getSoundManager().stop(this.chaseSoundInstance);
         }
     }
 
@@ -523,6 +630,20 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     // Attacking and damaging
+
+    protected double getSquaredMaxAttackDistance(LivingEntity entity) {
+        return this.getWidth() * 2.0f * (this.getWidth() * 2.0f) + entity.getWidth();
+    }
+
+    protected void attack(LivingEntity target, double squaredDistance) {
+        double d = this.getSquaredMaxAttackDistance(target);
+        if (squaredDistance <= d && this.cooldown <= 0) {
+            this.cooldown = MathUtils.toGoalTicks(20);
+            this.swingHand(Hand.MAIN_HAND);
+            this.tryAttack(target);
+        }
+    }
+
     @Override
     public boolean tryAttack(Entity target) {
         float damage = (float) this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);

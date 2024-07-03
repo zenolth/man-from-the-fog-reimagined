@@ -1,6 +1,7 @@
 package com.zen.fogman.other;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class MathUtils {
@@ -18,5 +19,9 @@ public class MathUtils {
     }
     public static double angleBetween(double x1,double y1,double x2,double y2) {
         return Math.atan2(y1 - y2,x1 - x2);
+    }
+
+    public static int toGoalTicks(int serverTicks) {
+        return MathHelper.ceilDiv(serverTicks, 2);
     }
 }

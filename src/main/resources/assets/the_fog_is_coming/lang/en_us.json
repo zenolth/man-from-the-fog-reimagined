@@ -1,12 +1,13 @@
 {
-  "item.the_fog_is_coming.tear_of_the_man": "Tear Of The Man",
-  "item.the_fog_is_coming.fogman_spawn_egg": "The Man Spawn Egg",
-  "entity.the_fog_is_coming.the_man": "The Man",
-  "entity.the_fog_is_coming.the_man_hallucination": "The Man",
-  "subtitles.the_fog_is_coming.man_pain": "Something hurts",
-  "subtitles.the_fog_is_coming.man_attack": "Something attacks",
-  "subtitles.the_fog_is_coming.man_spot": "Something spots someone",
-  "subtitles.the_fog_is_coming.man_idlecalm": "Something growls",
-  "subtitles.the_fog_is_coming.man_death": "Something dies",
-  "subtitles.the_fog_is_coming.man_lunge": "Something lunges"
+  "item.the_fog_is_coming.tear_of_the_man": "Tear Of §kThe Man§r",
+  "item.the_fog_is_coming.fogman_spawn_egg": "§kThe Man§r Spawn Egg",
+  "entity.the_fog_is_coming.the_man": "§kThe Man§r",
+  "entity.the_fog_is_coming.the_man_hallucination": "§kThe Man§r",
+  "subtitles.the_fog_is_coming.man_pain": "§kThe Man§r hurts",
+  "subtitles.the_fog_is_coming.man_attack": "§kThe Man§r attacks",
+  "subtitles.the_fog_is_coming.man_spot": "§kThe Man§r spots someone",
+  "subtitles.the_fog_is_coming.man_idlecalm": "§kThe Man§r growls",
+  "subtitles.the_fog_is_coming.man_death": "§kThe Man§r dies",
+  "subtitles.the_fog_is_coming.man_lunge": "§kThe Man§r lunges",
+  "subtitles.the_fog_is_coming.man_creepy": "..."
 }

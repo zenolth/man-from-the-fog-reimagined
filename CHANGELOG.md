@@ -1,3 +1,4 @@
-- Fixed (I think again) chase theme not playing on all clients
-
-(I'm really trying to fix this bug I swear)
+- Added a chance for The Man to not spawn at all, and just play a creepy sound in place where he would've spawned
+- Fixed (Finally) chase theme not playing
+- Fixed problems with semver causing crashes on servers
+- Replaced goals with a "state machine"
