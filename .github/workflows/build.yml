@@ -42,3 +42,4 @@ jobs:
           game-version-filter: none
 
           version-type: beta
+          changelog-file: CHANGELOG.*

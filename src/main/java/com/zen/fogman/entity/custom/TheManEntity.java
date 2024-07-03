@@ -7,6 +7,8 @@ import com.zen.fogman.item.ModItems;
 import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.WoodType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.sound.*;
 import net.minecraft.enchantment.Enchantments;
@@ -29,17 +31,20 @@ import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.state.property.Property;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.*;
+import org.apache.logging.log4j.core.jmx.Server;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
@@ -51,16 +56,17 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Random;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
-    public static final double MAN_SPEED = 0.63;
-    public static final double MAN_CLIMB_SPEED = 0.8;
+    public static final double MAN_SPEED = 0.66;
+    public static final double MAN_CLIMB_SPEED = 1.2;
     public static final double MAN_MAX_SCAN_DISTANCE = 100000.0;
     public static final int MAN_CHASE_DISTANCE = 200;
 
-    private static final TrackedData<Boolean> MAN_CHASING_FLAG = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> MAN_CLIMBING_FLAG = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Integer> MAN_STATE_FLAG = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.INTEGER);
 
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
     protected static final RawAnimation RUN_ANIM = RawAnimation.begin().thenLoop("run");
@@ -79,8 +85,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     private ManState state;
 
     public EntityTrackingSoundInstance chaseSoundInstance;
-
-    private boolean chasing = false;
 
     // Chase stuff
     private int cooldown;
@@ -137,18 +141,15 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public void setState(ManState state) {
         this.state = state;
+        this.dataTracker.set(MAN_STATE_FLAG,this.state.ordinal());
     }
 
     public ManState getState() {
-        return this.state;
-    }
-
-    public boolean isState(ManState state) {
-        return this.getState() == state;
+        return ManState.values()[this.dataTracker.get(MAN_STATE_FLAG)];
     }
 
     public boolean isChasing() {
-        return this.dataTracker.get(MAN_CHASING_FLAG);
+        return this.getState() == ManState.CHASE;
     }
 
     public void startChase() {
@@ -177,8 +178,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     @Override
     protected void initDataTracker() {
         super.initDataTracker();
-        this.dataTracker.startTracking(MAN_CHASING_FLAG,false);
         this.dataTracker.startTracking(MAN_CLIMBING_FLAG,false);
+        this.dataTracker.startTracking(MAN_STATE_FLAG,0);
     }
 
     public static DefaultAttributeContainer.Builder createManAttributes() {
@@ -309,6 +310,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     @Override
+    public boolean isGlowing() {
+        return this.isChasing() && this.getTarget() != null && MathUtils.distanceTo(this,this.getTarget()) <= MAN_CHASE_DISTANCE / 4.0;
+    }
+
+    @Override
     protected void dropXp() {
         if (this.getWorld().isDay()) {
             return;
@@ -341,7 +347,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
      * Spawns hallucinations randomly around The Man
      */
     public void spawnHallucinations() {
-        if (!this.isState(ManState.CHASE)) {
+        if (!this.isChasing()) {
             return;
         }
 
@@ -360,6 +366,23 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             hallucination.setPosition(this.getPos().add(xOffset,0,zOffset));
 
             serverWorld.spawnEntity(hallucination);
+        }
+    }
+
+    public void breakBlocksAround(ServerWorld serverWorld) {
+        if (this.isDead()) {
+            return;
+        }
+
+        for (BlockPos blockPos : BlockPos.iterateOutwards(this.getBlockPos(), 0, 2, 0)) {
+            BlockState blockState = serverWorld.getBlockState(blockPos);
+            if (blockState.isAir() || this.getBlockPos().getY() >= blockPos.getY()) {
+                continue;
+            }
+
+            if (blockState.getBlock().getHardness() <= 2.0 && blockState.getBlock().getHardness() >= 1.5) {
+                serverWorld.breakBlock(blockPos, true);
+            }
         }
     }
 
@@ -386,12 +409,13 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
-    public void idleTick() {
-        this.chasing = false;
+    public void idleTick(ServerWorld serverWorld) {
+
     }
 
-    public void chaseTick() {
-        this.chasing = true;
+    public void chaseTick(ServerWorld serverWorld) {
+
+        this.breakBlocksAround(serverWorld);
 
         LivingEntity target = this.getTarget();
 
@@ -427,8 +451,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.addEffectsToClosePlayers((ServerWorld) this.getWorld(),this.getPos(),this,MAN_CHASE_DISTANCE);
     }
 
-    public void stalkTick() {
-        this.chasing = false;
+    public void stalkTick(ServerWorld serverWorld) {
         LivingEntity livingEntity = this.getTarget();
 
         if (livingEntity == null) {
@@ -445,8 +468,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.chaseIfTooClose();
     }
 
-    public void stareTick() {
-        this.chasing = false;
+    public void stareTick(ServerWorld serverWorld) {
         LivingEntity livingEntity = this.getTarget();
 
         if (livingEntity == null) {
@@ -467,26 +489,28 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void serverTick() {
+        ServerWorld serverWorld = (ServerWorld) this.getWorld();
 
-        switch (this.getState()) {
+        switch (this.state) {
             case IDLE:
-                this.idleTick();
+                this.idleTick(serverWorld);
                 break;
             case CHASE:
-                this.chaseTick();
+                this.chaseTick(serverWorld);
                 break;
             case STARE:
-                this.stareTick();
+                this.stareTick(serverWorld);
                 break;
             case STALK:
-                this.stalkTick();
+                this.stalkTick(serverWorld);
                 break;
         }
 
-        this.dataTracker.set(MAN_CHASING_FLAG,this.chasing);
-        this.dataTracker.set(MAN_CLIMBING_FLAG,this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY());
-
-        ServerWorld serverWorld = (ServerWorld) this.getWorld();
+        this.dataTracker.set(
+                MAN_CLIMBING_FLAG,
+                this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY()
+        );
+        this.dataTracker.set(MAN_STATE_FLAG,this.state.ordinal());
 
         this.random2.setSeed(serverWorld.getTime());
 
@@ -510,6 +534,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
 
         if (this.isClimbing()) {
+
+            if (this.isOnGround()) {
+                this.jump();
+            }
+
             Vec3d toPlayer = this.getTarget().getPos().subtract(this.getPos()).normalize().multiply(0.2);
             setVelocity(new Vec3d(toPlayer.getX(),1,toPlayer.getZ()).multiply(MAN_CLIMB_SPEED));
         }

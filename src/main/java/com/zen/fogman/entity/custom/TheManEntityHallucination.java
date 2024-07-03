@@ -28,6 +28,11 @@ public class TheManEntityHallucination extends TheManEntity {
     }
 
     @Override
+    public void breakBlocksAround(ServerWorld serverWorld) {
+
+    }
+
+    @Override
     public boolean tryAttack(Entity target) {
         this.discard();
         return false;

@@ -1,4 +1,8 @@
-- Added a chance for The Man to not spawn at all, and just play a creepy sound in place where he would've spawned
-- Fixed (Finally) chase theme not playing
-- Fixed problems with semver causing crashes on servers
-- Replaced goals with a "state machine"
+- The Man now glows when chasing and when too close to it's target
+- The Man now breaks blocks above him when chasing
+- Increased spawn chance to 23%
+- Decreased creepy sound chance to 55%
+- The Man is now slightly faster
+- The Man now jumps before he climbs
+- The Man now climbs faster
+- Fixed The Man's climbing animation

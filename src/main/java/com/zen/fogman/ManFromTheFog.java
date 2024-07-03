@@ -20,11 +20,11 @@ import java.util.Random;
 
 public class ManFromTheFog implements ModInitializer {
 
-	public static final double MAN_SPAWN_INTERVAL = 5;
-	public static final double MAN_SPAWN_CHANCE = 0.17;
-	public static final double MAN_SOUND_CHANCE = 0.6;
+	public static final double MAN_SPAWN_INTERVAL = 15;
+	public static final double MAN_SPAWN_CHANCE = 0.23;
+	public static final double MAN_SOUND_CHANCE = 0.55;
 
-	public static final float MAN_CREEPY_VOLUME = 1f;
+	public static final float MAN_CREEPY_VOLUME = 5f;
 
 	public static final String MOD_ID = "the_fog_is_coming";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
@@ -68,7 +68,7 @@ public class ManFromTheFog implements ModInitializer {
 		man.setPosition(spawnPosition);
 		man.setTarget(player);
 		serverWorld.spawnEntity(man);
-		serverWorld.playSound(null,spawnPosition.getX(),spawnPosition.getY(),spawnPosition.getZ(), ModSounds.MAN_CREEPY,SoundCategory.AMBIENT,MAN_CREEPY_VOLUME,1f);
+		serverWorld.playSound(null,spawnPosition.getX(),spawnPosition.getY(),spawnPosition.getZ(), ModSounds.MAN_CREEPY,SoundCategory.AMBIENT,MAN_CREEPY_VOLUME / 2,1f);
 	}
 
 	public static void playCreepySound(ServerWorld serverWorld) {
