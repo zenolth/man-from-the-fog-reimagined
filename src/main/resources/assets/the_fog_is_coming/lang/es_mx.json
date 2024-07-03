@@ -1,0 +1,13 @@
+{
+  "item.the_fog_is_coming.tear_of_the_man": "Lagrima del §kHombre§r",
+  "item.the_fog_is_coming.fogman_spawn_egg": "Generar al §kHombre§r",
+  "entity.the_fog_is_coming.the_man": "§kEl Hombre§r",
+  "entity.the_fog_is_coming.the_man_hallucination": "§kEl Hombre§r",
+  "subtitles.the_fog_is_coming.man_pain": "§kEl Hombre§r es atacado",
+  "subtitles.the_fog_is_coming.man_attack": "§kEl Hombre§r ataca",
+  "subtitles.the_fog_is_coming.man_spot": "§kEl Hombre§r vio a alguien",
+  "subtitles.the_fog_is_coming.man_idlecalm": "§kEl Hombre§r gruñe",
+  "subtitles.the_fog_is_coming.man_death": "§kEl Hombre§r muere",
+  "subtitles.the_fog_is_coming.man_lunge": "§kEl Hombre§r se lanza",
+  "subtitles.the_fog_is_coming.man_creepy": "..."
+}
