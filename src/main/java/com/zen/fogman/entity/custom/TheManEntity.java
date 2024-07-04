@@ -99,8 +99,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.lastHallucinationTime = MathUtils.tickToSec(this.getWorld().getTime());
         this.aliveTime = this.random2.nextLong(30,60);
 
-        this.setState(ManState.STARE);
-        this.chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,SoundCategory.HOSTILE,0.6f,1.0f,this,this.getWorld().getTime());
+        this.setState(ManState.values()[this.random2.nextInt(2,3)]);
+        this.chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,this.getSoundCategory(),1.0f,1.0f,this,this.getWorld().getTime());
     }
 
     /**
@@ -129,7 +129,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     public SoundCategory getSoundCategory() {
-        return super.getSoundCategory();
+        return SoundCategory.MASTER;
     }
 
     public void setState(ManState state) {
@@ -154,8 +154,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     public void addEffectsToClosePlayers(ServerWorld world, Vec3d pos, @Nullable Entity entity, int range) {
         StatusEffectInstance darknessInstance = new StatusEffectInstance(StatusEffects.DARKNESS, 260, 2, false, false);
         StatusEffectUtil.addEffectToPlayersWithinDistance(world, entity, pos, range, darknessInstance, 200);
-        StatusEffectInstance nightVisionInstance = new StatusEffectInstance(StatusEffects.NIGHT_VISION, 260, 0, false, false);
-        StatusEffectUtil.addEffectToPlayersWithinDistance(world, entity, pos, range, nightVisionInstance, 200);
         StatusEffectInstance speedInstance = new StatusEffectInstance(StatusEffects.SPEED, 460, 1, false, false);
         StatusEffectUtil.addEffectToPlayersWithinDistance(world, entity, pos, range, speedInstance, 400);
     }
@@ -656,22 +654,23 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         if (squaredDistance <= d && this.cooldown <= 0) {
             this.cooldown = MathUtils.toGoalTicks(20);
             this.swingHand(Hand.MAIN_HAND);
-            this.tryAttack(target);
+            this.attackTarget(target);
         }
     }
 
-    @Override
-    public boolean tryAttack(Entity target) {
+    public boolean attackTarget(LivingEntity target) {
         float damage = (float) this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         float knockback = (float) this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_KNOCKBACK);
+
         this.playSound(ModSounds.MAN_ATTACK,this.getSoundVolume(),this.getSoundPitch());
-        if (knockback > 0.0f && target instanceof LivingEntity) {
-            ((LivingEntity)target).takeKnockback(knockback * 0.5f, MathHelper.sin(this.getYaw() * ((float)Math.PI / 180)), -MathHelper.cos(this.getYaw() * ((float)Math.PI / 180)));
+
+        if (knockback > 0.0f) {
+            target.takeKnockback(knockback * 0.5f, MathHelper.sin(this.getYaw() * ((float)Math.PI / 180)), -MathHelper.cos(this.getYaw() * ((float)Math.PI / 180)));
             this.setVelocity(this.getVelocity().multiply(0.6, 1.0, 0.6));
         }
-        if (target instanceof LivingEntity) {
-            ((LivingEntity) target).addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS,50));
-        }
+
+        target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS,50));
+
         return target.damage(this.getDamageSources().mobAttack(this), damage);
     }
 

@@ -1,3 +1,3 @@
-- Added a vignette when being chased
-- Added Mexican Spanish translation by [Santiago Hernandez](https://github.com/TheLegendofSaram)
-- The Man now also gives night vision alongside darkness (to compensate for the vignette)
+- Removed the chase vignette (too buggy, mostly just caused a red screen)
+- Changed the chase theme
+- Removed night vision during a chase (was just a compensation for the vignette, since the vignette is gone, night vision during chase is useless)
