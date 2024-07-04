@@ -1,8 +1,3 @@
-- The Man now glows when chasing and when too close to it's target
-- The Man now breaks blocks above him when chasing
-- Increased spawn chance to 23%
-- Decreased creepy sound chance to 55%
-- The Man is now slightly faster
-- The Man now jumps before he climbs
-- The Man now climbs faster
-- Fixed The Man's climbing animation
+- Added a vignette when being chased
+- Added Mexican Spanish translation by [Santiago Hernandez](https://github.com/TheLegendofSaram)
+- The Man now also gives night vision alongside darkness (to compensate for the vignette)

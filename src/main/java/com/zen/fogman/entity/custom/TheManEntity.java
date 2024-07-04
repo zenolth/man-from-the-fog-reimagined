@@ -1,14 +1,11 @@
 package com.zen.fogman.entity.custom;
 
-import com.zen.fogman.ManFromTheFog;
 import com.zen.fogman.entity.ModEntities;
 import com.zen.fogman.goals.custom.BreakDoorInstantGoal;
 import com.zen.fogman.item.ModItems;
 import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.WoodType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.sound.*;
 import net.minecraft.enchantment.Enchantments;
@@ -31,20 +28,17 @@ import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.state.property.Property;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.*;
-import org.apache.logging.log4j.core.jmx.Server;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
@@ -56,7 +50,6 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Random;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
@@ -152,15 +145,17 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return this.getState() == ManState.CHASE;
     }
 
-    public void startChase() {
+    public void startChase(ServerWorld serverWorld) {
         this.setState(ManState.CHASE);
         this.playSpottedSound();
-        this.doLightning();
+        TheManEntity.doLightning(serverWorld,this.getPos());
     }
 
     public void addEffectsToClosePlayers(ServerWorld world, Vec3d pos, @Nullable Entity entity, int range) {
-        StatusEffectInstance darknessInstance = new StatusEffectInstance(StatusEffects.DARKNESS, 260, 0, false, false);
+        StatusEffectInstance darknessInstance = new StatusEffectInstance(StatusEffects.DARKNESS, 260, 2, false, false);
         StatusEffectUtil.addEffectToPlayersWithinDistance(world, entity, pos, range, darknessInstance, 200);
+        StatusEffectInstance nightVisionInstance = new StatusEffectInstance(StatusEffects.NIGHT_VISION, 260, 0, false, false);
+        StatusEffectUtil.addEffectToPlayersWithinDistance(world, entity, pos, range, nightVisionInstance, 200);
         StatusEffectInstance speedInstance = new StatusEffectInstance(StatusEffects.SPEED, 460, 1, false, false);
         StatusEffectUtil.addEffectToPlayersWithinDistance(world, entity, pos, range, speedInstance, 400);
     }
@@ -168,11 +163,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     @Override
     protected void initGoals() {
         this.goalSelector.add(1, new BreakDoorInstantGoal(this));
-
-        // Targets
-        this.targetSelector.add(1, new ActiveTargetGoal<>(this, PlayerEntity.class, false));
-
-        //this.targetSelector.add(7, new ActiveTargetGoal<>(this, AnimalEntity.class, false));
     }
 
     @Override
@@ -198,16 +188,13 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     /**
      * Spawns a lightning at The Man's position
      */
-    public void doLightning() {
-        if (!this.getWorld().isClient()) {
-            ServerWorld serverWorld = (ServerWorld) this.getWorld();
-            LightningEntity lightningEntity = new LightningEntity(EntityType.LIGHTNING_BOLT, serverWorld);
-            lightningEntity.setCosmetic(true);
-            lightningEntity.setInvulnerable(true);
-            lightningEntity.setOnFire(false);
-            lightningEntity.setPosition(this.getPos());
-            serverWorld.spawnEntity(lightningEntity);
-        }
+    public static void doLightning(ServerWorld serverWorld, Vec3d position) {
+        LightningEntity lightningEntity = new LightningEntity(EntityType.LIGHTNING_BOLT, serverWorld);
+        lightningEntity.setCosmetic(true);
+        lightningEntity.setInvulnerable(true);
+        lightningEntity.setOnFire(false);
+        lightningEntity.setPosition(position);
+        serverWorld.spawnEntity(lightningEntity);
     }
 
     @Override
@@ -217,7 +204,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
         if (!this.getWorld().isClient()) {
             ServerWorld serverWorld = (ServerWorld) this.getWorld();
-            return TheManEntity.manExist((ServerWorld) this.getWorld());
+            return TheManEntity.manExist(serverWorld);
         }
         return super.canSpawn(world);
     }
@@ -325,8 +312,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     /**
      * Despawns The Man, spawns a lightning and stops all sounds
      */
-    public void begone() {
-        this.doLightning();
+    public void begone(ServerWorld serverWorld) {
+        TheManEntity.doLightning(serverWorld,this.getPos());
         this.stopSounds();
         this.discard();
     }
@@ -394,9 +381,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
-    public void chaseIfTooClose() {
+    public void chaseIfTooClose(ServerWorld serverWorld) {
         if (this.getTarget() != null && this.getTarget().isPlayer() && MathUtils.distanceTo(this,this.getTarget()) <= 15) {
-            this.startChase();
+            this.startChase(serverWorld);
         }
     }
 
@@ -465,7 +452,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             this.lastMoveTime = MathUtils.tickToSec(this.getWorld().getTime());
         }
 
-        this.chaseIfTooClose();
+        this.chaseIfTooClose(serverWorld);
     }
 
     public void stareTick(ServerWorld serverWorld) {
@@ -477,7 +464,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         if (this.isLookedAt()) {
             if (MathUtils.tickToSec(this.getWorld().getTime()) - this.stareTime > 7.0) {
-                this.startChase();
+                this.startChase(serverWorld);
             }
         } else {
             this.stareTime = MathUtils.tickToSec(this.getWorld().getTime());
@@ -485,7 +472,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         this.getLookControl().lookAt(livingEntity, 30.0f, 30.0f);
 
-        this.chaseIfTooClose();
+        this.chaseIfTooClose(serverWorld);
     }
 
     public void serverTick() {
@@ -533,7 +520,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             this.lastHallucinationTime = MathUtils.tickToSec(this.getWorld().getTime());
         }
 
-        if (this.isClimbing()) {
+        if (this.isClimbing() && this.getTarget() != null) {
 
             if (this.isOnGround()) {
                 this.jump();
@@ -544,7 +531,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
 
         if (this.isAlive() && ((aliveTime > 0 && MathUtils.tickToSec(this.getWorld().getTime()) - lastTime > aliveTime) || (this.getTarget() != null && this.getTarget().isDead()))) {
-            this.begone();
+            this.begone(serverWorld);
         }
         if (this.getHealth() < this.getMaxHealth() && this.isAlive() && this.getWorld().isNight()) {
             this.setHealth(this.getHealth() + 0.1f);

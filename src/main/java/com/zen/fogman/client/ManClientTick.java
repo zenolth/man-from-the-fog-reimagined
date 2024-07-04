@@ -25,9 +25,9 @@ public class ManClientTick implements ClientTickEvents.EndTick {
                 ModEntities.THE_MAN,
                 Box.of(
                         client.player.getPos(),
-                        TheManEntity.MAN_CHASE_DISTANCE * 4,
-                        TheManEntity.MAN_CHASE_DISTANCE * 4,
-                        TheManEntity.MAN_CHASE_DISTANCE * 4
+                        TheManEntity.MAN_CHASE_DISTANCE * 1.5,
+                        TheManEntity.MAN_CHASE_DISTANCE * 1.5,
+                        TheManEntity.MAN_CHASE_DISTANCE * 1.5
                 ),
                 EntityPredicates.VALID_ENTITY
         );

@@ -86,6 +86,7 @@ public class ManFromTheFog implements ModInitializer {
 		ModSounds.registerSounds();
 		ModItems.registerModItems();
 		ModEntities.registerEntities();
+
 		ServerTickEvents.END_WORLD_TICK.register((serverWorld) -> {
 			if (serverWorld.isClient()) {
 				return;
