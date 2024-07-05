@@ -1,2 +1,7 @@
-- Tweaked some The Man's pathfinding penalties
-- Added gamerules regarding spawning of The Man
+- A lot of refactoring has been done
+    - Including a whole new state system (doesn't change gameplay, just easier to add new states now)
+- The Man now breaks glass blocks in 1 block radius around him
+- Fixed bug where if a hallucination despawns, the chase theme restarts
+- Made The Man's ambient sounds quieter and more muffled
+- Added an "alarm" screech when The Man begins a chase
+- The Man can now either chase, flee or disappear on the spot when stared at for too long

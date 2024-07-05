@@ -7,6 +7,9 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 
 public class ModSounds {
+    public static final Identifier MAN_ALARM_ID = new Identifier(parseName("man_alarm"));
+    public static SoundEvent MAN_ALARM = SoundEvent.of(MAN_ALARM_ID);
+
     public static final Identifier MAN_PAIN_ID = new Identifier(parseName("man_pain"));
     public static SoundEvent MAN_PAIN = SoundEvent.of(MAN_PAIN_ID);
 
@@ -36,6 +39,7 @@ public class ModSounds {
     }
 
     public static void registerSounds() {
+        Registry.register(Registries.SOUND_EVENT,MAN_ALARM_ID,MAN_ALARM);
         Registry.register(Registries.SOUND_EVENT,MAN_PAIN_ID,MAN_PAIN);
         Registry.register(Registries.SOUND_EVENT,MAN_ATTACK_ID,MAN_ATTACK);
         Registry.register(Registries.SOUND_EVENT,MAN_SPOT_ID,MAN_SPOT);

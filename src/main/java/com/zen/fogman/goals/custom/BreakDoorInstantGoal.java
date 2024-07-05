@@ -1,9 +1,6 @@
 package com.zen.fogman.goals.custom;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.DoorBlock;
-import net.minecraft.block.WoodType;
+import net.minecraft.block.*;
 import net.minecraft.entity.ai.NavigationConditions;
 import net.minecraft.entity.ai.goal.DoorInteractGoal;
 import net.minecraft.entity.ai.pathing.MobNavigation;

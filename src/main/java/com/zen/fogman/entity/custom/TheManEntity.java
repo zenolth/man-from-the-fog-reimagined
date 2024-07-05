@@ -6,13 +6,12 @@ import com.zen.fogman.item.ModItems;
 import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ManSoundInstance;
 import com.zen.fogman.sounds.ModSounds;
-import net.minecraft.block.BlockState;
+import com.zen.fogman.state.*;
+import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.sound.*;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.TargetPredicate;
-import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.ai.pathing.PathNodeType;
 import net.minecraft.entity.ai.pathing.SpiderNavigation;
@@ -35,7 +34,7 @@ import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.Hand;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -52,13 +51,39 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Random;
+import java.util.function.Predicate;
+
+/*
+    TODO :
+    - Add some more random events
+    - Refactor some code
+    - (Maybe) Optimize
+    - Add compatibility with some mods (Lunar cycles etc.)
+    - Make it creepier (yeah)
+    - Make and add more animations
+ */
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
     public static final double MAN_SPEED = 0.66;
     public static final double MAN_CLIMB_SPEED = 1.2;
     public static final double MAN_MAX_SCAN_DISTANCE = 100000.0;
+    public static final long MAN_LOOK_TIME_TO_CHASE = 4;
     public static final int MAN_CHASE_DISTANCE = 200;
+
+    public static final Predicate<BlockState> MAN_BLOCK_STATE_PREDICATE = blockState -> {
+
+        if (blockState.isAir()) {
+            return false;
+        }
+
+        if (blockState.getBlock() instanceof LeavesBlock) {
+            return false;
+        }
+
+        return blockState.isOpaque();
+    };
 
     private static final TrackedData<Boolean> MAN_CLIMBING_FLAG = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Integer> MAN_STATE_FLAG = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.INTEGER);
@@ -69,6 +94,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
 
+    private ManState state;
+    private final HashMap<ManState, AbstractState> states = new HashMap<>();
+
     public final Random random2 = new Random();
     public long aliveTime;
     private long lastTime;
@@ -77,23 +105,28 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     private int targetFOV = 90;
 
-    private ManState state;
-
     public ManSoundInstance chaseSoundInstance;
-
-    // Chase stuff
-    private int cooldown;
-    private long lastMoveTime;
-    private long lastLungeTime;
     private long lastBreakTime;
-    private boolean didLunge = false;
-
-    // Stare stuff
-    private long stareTime;
 
     public TheManEntity(EntityType<? extends TheManEntity> entityType, World world) {
         super(entityType, world);
 
+        this.setState(ManState.STARE);
+
+        this.initPathfindingPenalties();
+        this.initStates();
+        this.initTimes();
+        this.initSounds();
+    }
+
+    public void initStates() {
+        this.addState(ManState.CHASE,new ChaseState(this,this.getWorld()));
+        this.addState(ManState.STARE,new StareState(this,this.getWorld()));
+        this.addState(ManState.STALK,new StalkState(this,this.getWorld()));
+        this.addState(ManState.FLEE,new FleeState(this,this.getWorld()));
+    }
+
+    public void initPathfindingPenalties() {
         this.setPathfindingPenalty(PathNodeType.UNPASSABLE_RAIL,0);
         this.setPathfindingPenalty(PathNodeType.FENCE,0);
         this.setPathfindingPenalty(PathNodeType.DOOR_WOOD_CLOSED,0);
@@ -103,18 +136,21 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.setPathfindingPenalty(PathNodeType.LEAVES,0);
         this.setPathfindingPenalty(PathNodeType.DANGER_POWDER_SNOW,-1);
         this.setPathfindingPenalty(PathNodeType.TRAPDOOR,-1);
+    }
 
-        this.lastMoveTime = MathUtils.tickToSec(this.getWorld().getTime());
-        this.lastLungeTime = MathUtils.tickToSec(this.getWorld().getTime());
-        this.stareTime = MathUtils.tickToSec(this.getWorld().getTime());
-
+    public void initTimes() {
         this.lastTime = MathUtils.tickToSec(this.getWorld().getTime());
         this.lastHallucinationTime = MathUtils.tickToSec(this.getWorld().getTime());
         this.lastBreakTime = MathUtils.tickToSec(this.getWorld().getTime());
         this.aliveTime = this.random2.nextLong(30,60);
+    }
 
-        this.setState(ManState.values()[this.random2.nextInt(2,3)]);
+    public void initSounds() {
         this.chaseSoundInstance = new ManSoundInstance(ModSounds.MAN_CHASE,this.getSoundCategory(),1.0f,1.0f,this,this.getWorld().getTime());
+    }
+
+    public void addState(ManState state,AbstractState object) {
+        this.states.put(state,object);
     }
 
     /**
@@ -161,8 +197,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public void startChase(ServerWorld serverWorld) {
         this.setState(ManState.CHASE);
-        this.playSpottedSound();
+        this.playAlarmSound();
         TheManEntity.doLightning(serverWorld,this.getPos());
+    }
+
+    public void flee() {
+        this.setState(ManState.FLEE);
     }
 
     public void addEffectsToClosePlayers(ServerWorld world, Vec3d pos, @Nullable Entity entity, int range) {
@@ -227,8 +267,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         nav.setCanWalkOverFences(true);
         nav.setCanPathThroughDoors(true);
         nav.setCanSwim(true);
-        nav.setSpeed(MAN_SPEED * 2);
+        nav.setSpeed(MAN_SPEED);
         return nav;
+    }
+
+    public boolean isHallucination() {
+        return false;
     }
 
     // Animations
@@ -385,7 +429,36 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 }
             }
 
+            for (BlockPos blockPos : BlockPos.iterateOutwards(this.getBlockPos(), 1, 1, 1)) {
+                BlockState blockState = serverWorld.getBlockState(blockPos);
+                if (blockState.isAir()) {
+                    continue;
+                }
+
+                if (blockState.getBlock() instanceof AbstractGlassBlock || blockState.getBlock() instanceof PaneBlock) {
+                    serverWorld.breakBlock(blockPos, true);
+                    serverWorld.playSoundAtBlockCenter(blockPos, SoundEvents.BLOCK_GLASS_BREAK,SoundCategory.BLOCKS,this.getSoundVolume(),this.getSoundPitch(),true);
+                }
+            }
+
             this.lastBreakTime = MathUtils.tickToSec(serverWorld.getTime());
+        }
+    }
+
+    public void closeTrapdoors(ServerWorld serverWorld) {
+        if (this.isDead()) {
+            return;
+        }
+
+        for (BlockPos blockPos : BlockPos.iterateOutwards(this.getBlockPos(), 2, 2, 2)) {
+            BlockState blockState = serverWorld.getBlockState(blockPos);
+            if (blockState.isAir() || blockPos.getY() > this.getBlockY()) {
+                continue;
+            }
+
+            if (blockState.contains(TrapdoorBlock.OPEN) && blockState.get(TrapdoorBlock.OPEN)) {
+                serverWorld.setBlockState(blockPos,blockState.with(TrapdoorBlock.OPEN,false));
+            }
         }
     }
 
@@ -404,134 +477,16 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     // Ticks
-
-    public void clientTick(MinecraftClient client) {
-        this.updateTargetFov(client);
-        this.playChaseSound(client);
+    public void stateTick(ServerWorld serverWorld) {
+        if (this.states.containsKey(this.state)) {
+            this.states.get(this.state).tick(serverWorld);
+        }
     }
 
-    public void idleTick(ServerWorld serverWorld) {
-
-    }
-
-    public void chaseTick(ServerWorld serverWorld) {
-
-        this.breakBlocksAround(serverWorld);
-
-        LivingEntity target = this.getTarget();
-
-        if (target == null) {
-            return;
-        }
-
-        double d = this.getSquaredDistanceToAttackPosOf(target);
-
-        if (this.random2.nextFloat(0f,1f) < 0.25 && !didLunge) {
-            didLunge = true;
-            doLunge(target);
-        }
-
-        if (didLunge) {
-            if (MathUtils.tickToSec(this.getWorld().getTime()) - this.lastLungeTime > 20) {
-                didLunge = false;
-                this.lastLungeTime = MathUtils.tickToSec(this.getWorld().getTime());
-            }
-        } else {
-            this.lastLungeTime = MathUtils.tickToSec(this.getWorld().getTime());
-        }
-
-        this.getLookControl().lookAt(target, 30.0f, 30.0f);
-
-        if (MathUtils.tickToSec(this.getWorld().getTime()) - this.lastMoveTime > 0.05) {
-            this.getNavigation().startMovingTo(target, 1);
-            this.lastMoveTime = MathUtils.tickToSec(this.getWorld().getTime());
-        }
-
-        this.cooldown = Math.max(this.cooldown - 1, 0);
-        this.attack(target,d);
-        this.addEffectsToClosePlayers((ServerWorld) this.getWorld(),this.getPos(),this,MAN_CHASE_DISTANCE);
-    }
-
-    public void stalkTick(ServerWorld serverWorld) {
-        LivingEntity livingEntity = this.getTarget();
-
-        if (livingEntity == null) {
-            return;
-        }
-
-        this.getLookControl().lookAt(livingEntity, 30.0f, 30.0f);
-
-        if (MathUtils.tickToSec(this.getWorld().getTime()) - this.lastMoveTime > 0.05) {
-            this.getNavigation().startMovingTo(livingEntity, 0.9);
-            this.lastMoveTime = MathUtils.tickToSec(this.getWorld().getTime());
-        }
-
-        this.chaseIfTooClose(serverWorld);
-    }
-
-    public void stareTick(ServerWorld serverWorld) {
-        LivingEntity livingEntity = this.getTarget();
-
-        if (livingEntity == null) {
-            return;
-        }
-
-        if (this.isLookedAt()) {
-            if (MathUtils.tickToSec(this.getWorld().getTime()) - this.stareTime > 7.0) {
-                this.startChase(serverWorld);
-            }
-        } else {
-            this.stareTime = MathUtils.tickToSec(this.getWorld().getTime());
-        }
-
-        this.getLookControl().lookAt(livingEntity, 30.0f, 30.0f);
-
-        this.chaseIfTooClose(serverWorld);
-    }
-
-    public void serverTick() {
-        ServerWorld serverWorld = (ServerWorld) this.getWorld();
-
-        switch (this.state) {
-            case IDLE:
-                this.idleTick(serverWorld);
-                break;
-            case CHASE:
-                this.chaseTick(serverWorld);
-                break;
-            case STARE:
-                this.stareTick(serverWorld);
-                break;
-            case STALK:
-                this.stalkTick(serverWorld);
-                break;
-        }
-
-        this.dataTracker.set(
-                MAN_CLIMBING_FLAG,
-                this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY()
-        );
-        this.dataTracker.set(MAN_STATE_FLAG,this.state.ordinal());
-
-        this.random2.setSeed(serverWorld.getTime());
-
-        this.setTarget(this.getWorld().getClosestPlayer(this.getX(),this.getY(),this.getZ(),MAN_MAX_SCAN_DISTANCE,true));
-
+    public void moveTick() {
         if (this.isSubmergedInWater()) {
             Vec3d oldVelocity = this.getVelocity();
             this.setVelocity(oldVelocity.getX(),0.5,oldVelocity.getZ());
-        }
-
-        if (this.isDead()) {
-            this.stopSounds();
-            return;
-        }
-
-        if (MathUtils.tickToSec(this.getWorld().getTime()) - this.lastHallucinationTime > 5) {
-            if (this.random2.nextFloat(0f,1f) < 0.2) {
-                this.spawnHallucinations();
-            }
-            this.lastHallucinationTime = MathUtils.tickToSec(this.getWorld().getTime());
         }
 
         if (this.isClimbing() && this.getTarget() != null) {
@@ -543,7 +498,26 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             Vec3d toPlayer = this.getTarget().getPos().subtract(this.getPos()).normalize().multiply(0.2);
             setVelocity(new Vec3d(toPlayer.getX(),1,toPlayer.getZ()).multiply(MAN_CLIMB_SPEED));
         }
+    }
 
+    public void dataTrackerTick() {
+        this.dataTracker.set(
+                MAN_CLIMBING_FLAG,
+                this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY()
+        );
+        this.dataTracker.set(MAN_STATE_FLAG,this.state.ordinal());
+    }
+
+    public void hallucinationTick() {
+        if (MathUtils.tickToSec(this.getWorld().getTime()) - this.lastHallucinationTime > 5) {
+            if (this.random2.nextFloat(0f,1f) < 0.2) {
+                this.spawnHallucinations();
+            }
+            this.lastHallucinationTime = MathUtils.tickToSec(this.getWorld().getTime());
+        }
+    }
+
+    public void healthTick(ServerWorld serverWorld) {
         if (this.isAlive() && ((aliveTime > 0 && MathUtils.tickToSec(this.getWorld().getTime()) - lastTime > aliveTime) || (this.getTarget() != null && this.getTarget().isDead()))) {
             this.begone(serverWorld);
         }
@@ -561,6 +535,30 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
+    public void clientTick(MinecraftClient client) {
+        this.updateTargetFov(client);
+        this.playChaseSound(client);
+    }
+
+    public void serverTick() {
+        if (this.isDead()) {
+            this.stopSounds();
+            return;
+        }
+
+        ServerWorld serverWorld = (ServerWorld) this.getWorld();
+
+        this.setTarget(this.getWorld().getClosestPlayer(this.getX(),this.getY(),this.getZ(),MAN_MAX_SCAN_DISTANCE,true));
+
+        this.random2.setSeed(serverWorld.getTime());
+
+        this.stateTick(serverWorld);
+        this.moveTick();
+        this.dataTrackerTick();
+        this.hallucinationTick();
+        this.healthTick(serverWorld);
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -571,8 +569,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     // Sounds
-    public void playSpottedSound() {
-        this.playSound(ModSounds.MAN_SPOT,this.getSoundVolume(),this.getSoundPitch());
+    public void playAlarmSound() {
+        this.playSound(ModSounds.MAN_ALARM,10.0f,this.getSoundPitch());
     }
 
     public void playLungeSound() {
@@ -637,10 +635,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
      */
     public void playChaseSound(MinecraftClient client) {
         if (this.isDead()) {
+            client.getSoundManager().stop(this.chaseSoundInstance);
             return;
         }
 
         if (client.player == null) {
+            client.getSoundManager().stop(this.chaseSoundInstance);
             return;
         }
 
@@ -668,28 +668,17 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
      * Stops all sounds being played by The Man
      */
     public void stopSounds() {
-        MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_ATTACK_ID,this.getSoundCategory());
         MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_CHASE_ID,this.getSoundCategory());
         MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_IDLECALM_ID,this.getSoundCategory());
-        MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_SPOT_ID,this.getSoundCategory());
     }
 
     // Attacking and damaging
 
-    protected double getSquaredMaxAttackDistance(LivingEntity entity) {
+    public double getSquaredMaxAttackDistance(LivingEntity entity) {
         return this.getWidth() * 2.0f * (this.getWidth() * 2.0f) + entity.getWidth();
     }
 
-    protected void attack(LivingEntity target, double squaredDistance) {
-        double d = this.getSquaredMaxAttackDistance(target);
-        if (squaredDistance <= d && this.cooldown <= 0) {
-            this.cooldown = MathUtils.toGoalTicks(20);
-            this.swingHand(Hand.MAIN_HAND);
-            this.attackTarget(target);
-        }
-    }
-
-    public boolean attackTarget(LivingEntity target) {
+    public void attackTarget(LivingEntity target) {
         float damage = (float) this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         float knockback = (float) this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_KNOCKBACK);
 
@@ -702,7 +691,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS,50));
 
-        return target.damage(this.getDamageSources().mobAttack(this), damage);
+        target.damage(this.getDamageSources().mobAttack(this), damage);
     }
 
     @Override
@@ -726,7 +715,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     public void slowMovement(BlockState state, Vec3d multiplier) {
-
+        super.slowMovement(state,new Vec3d(1,1,1));
     }
 
     /**
@@ -743,7 +732,15 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 Vec3d lookVector = player.getRotationVec(1.0f).normalize();
                 Vec3d direction = new Vec3d(this.getX() - player.getX(), this.getEyeY() - player.getEyeY(), this.getZ() - player.getZ());
                 double e = lookVector.dotProduct(direction.normalize());
-                return e > Math.cos(Math.toRadians(this.targetFOV)) && this.getWorld().raycast(new RaycastContext(new Vec3d(this.getX(), this.getEyeY(), this.getZ()), new Vec3d(player.getX(), player.getEyeY(), player.getZ()), RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, this)).getType() == HitResult.Type.MISS;
+
+                return e > Math.cos(Math.toRadians(this.targetFOV)) &&
+                        this.getWorld().raycast(
+                                new BlockStateRaycastContext(
+                                        new Vec3d(this.getX(), this.getEyeY(), this.getZ()),
+                                        new Vec3d(player.getX(), player.getEyeY(), player.getZ()),
+                                        MAN_BLOCK_STATE_PREDICATE
+                                )
+                        ).getType() == HitResult.Type.MISS;
             }
         }
         return false;

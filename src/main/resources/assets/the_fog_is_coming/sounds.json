@@ -1,4 +1,12 @@
 {
+  "man_alarm": {
+    "subtitle": "subtitles.the_fog_is_coming.man_alarm",
+    "sounds": [
+      "the_fog_is_coming:mansounds/alarm1",
+      "the_fog_is_coming:mansounds/alarm2",
+      "the_fog_is_coming:mansounds/alarm3"
+    ]
+  },
   "man_pain": {
     "subtitle": "subtitles.the_fog_is_coming.man_pain",
     "sounds": [

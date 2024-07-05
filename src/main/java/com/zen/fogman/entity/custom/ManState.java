@@ -4,5 +4,6 @@ public enum ManState {
     IDLE,
     CHASE,
     STARE,
-    STALK
+    STALK,
+    FLEE
 }

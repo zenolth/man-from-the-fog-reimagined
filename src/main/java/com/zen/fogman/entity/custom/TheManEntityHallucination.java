@@ -1,5 +1,6 @@
 package com.zen.fogman.entity.custom;
 
+import com.zen.fogman.sounds.ModSounds;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -18,6 +19,11 @@ public class TheManEntityHallucination extends TheManEntity {
     }
 
     @Override
+    public boolean isHallucination() {
+        return true;
+    }
+
+    @Override
     public void clientTick(MinecraftClient client) {
 
     }
@@ -30,6 +36,16 @@ public class TheManEntityHallucination extends TheManEntity {
     @Override
     public void breakBlocksAround(ServerWorld serverWorld) {
 
+    }
+
+    @Override
+    public void playChaseSound(MinecraftClient client) {
+
+    }
+
+    @Override
+    public void stopSounds() {
+        MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_IDLECALM_ID,this.getSoundCategory());
     }
 
     @Override
