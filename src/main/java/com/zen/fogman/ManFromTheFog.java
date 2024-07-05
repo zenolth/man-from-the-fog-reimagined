@@ -2,28 +2,27 @@ package com.zen.fogman;
 
 import com.zen.fogman.entity.ModEntities;
 import com.zen.fogman.entity.custom.TheManEntity;
+import com.zen.fogman.gamerules.ModGamerules;
 import com.zen.fogman.item.ModItems;
 import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.Heightmap;
+import net.minecraft.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Random;
 
 public class ManFromTheFog implements ModInitializer {
-
-	public static final double MAN_SPAWN_INTERVAL = 15;
-	public static final double MAN_SPAWN_CHANCE = 0.23;
-	public static final double MAN_SOUND_CHANCE = 0.55;
-
 	public static final float MAN_CREEPY_VOLUME = 5f;
 
 	public static final String MOD_ID = "the_fog_is_coming";
@@ -60,7 +59,7 @@ public class ManFromTheFog implements ModInitializer {
 
 	public static void spawnMan(ServerWorld serverWorld) {
 		ServerPlayerEntity player = serverWorld.getRandomAlivePlayer();
-		if (player == null) {
+		if (player == null || player.getWorld().getRegistryKey() != World.OVERWORLD) {
 			return;
 		}
 		Vec3d spawnPosition = ManFromTheFog.getRandomSpawnPositionAtPoint(serverWorld,player.getBlockPos());
@@ -68,12 +67,12 @@ public class ManFromTheFog implements ModInitializer {
 		man.setPosition(spawnPosition);
 		man.setTarget(player);
 		serverWorld.spawnEntity(man);
-		serverWorld.playSound(null,spawnPosition.getX(),spawnPosition.getY(),spawnPosition.getZ(), ModSounds.MAN_CREEPY,SoundCategory.AMBIENT,MAN_CREEPY_VOLUME / 2,1f);
+		serverWorld.playSound(null,spawnPosition.getX(),spawnPosition.getY(),spawnPosition.getZ(), ModSounds.MAN_CREEPY,SoundCategory.AMBIENT,MAN_CREEPY_VOLUME,1f);
 	}
 
 	public static void playCreepySound(ServerWorld serverWorld) {
 		ServerPlayerEntity player = serverWorld.getRandomAlivePlayer();
-		if (player == null) {
+		if (player == null || player.getWorld().getRegistryKey() != World.OVERWORLD) {
 			return;
 		}
 		Vec3d soundPosition = ManFromTheFog.getRandomSpawnPositionAtPoint(serverWorld,player.getBlockPos());
@@ -83,6 +82,7 @@ public class ManFromTheFog implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		ModGamerules.registerGamerules();
 		ModSounds.registerSounds();
 		ModItems.registerModItems();
 		ModEntities.registerEntities();
@@ -97,14 +97,21 @@ public class ManFromTheFog implements ModInitializer {
 			if (TheManEntity.manExist(serverWorld)) {
 				return;
 			}
-			if (MathUtils.tickToSec(serverWorld.getTime()) - lastRandomTime > MAN_SPAWN_INTERVAL) {
-				if (random.nextFloat(0f,1f) < MAN_SPAWN_CHANCE * serverWorld.getPlayers().size()) {
-					if (random.nextFloat(0f,1f) < MAN_SOUND_CHANCE) {
+
+			GameRules gameRules = serverWorld.getGameRules();
+
+			if (MathUtils.tickToSec(serverWorld.getTime()) - lastRandomTime > gameRules.get(ModGamerules.MAN_SPAWN_INTERVAL).get()) {
+
+				int spawnChanceMul = gameRules.getBoolean(ModGamerules.MAN_SPAWN_CHANCE_SCALES) ? serverWorld.getPlayers().size() : 1;
+
+				if (random.nextFloat(0f,1f) < gameRules.get(ModGamerules.MAN_SPAWN_CHANCE).get() * spawnChanceMul) {
+					if (random.nextFloat(0f,1f) < gameRules.get(ModGamerules.MAN_AMBIENT_SOUND_CHANCE).get()) {
 						playCreepySound(serverWorld);
 					} else {
 						spawnMan(serverWorld);
 					}
 				}
+
 				lastRandomTime = MathUtils.tickToSec(serverWorld.getTime());
 			}
 		});

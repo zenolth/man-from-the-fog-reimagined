@@ -40,6 +40,7 @@ dependencies {
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	// GeckoLib : Animations :3
 	modImplementation("software.bernie.geckolib:geckolib-fabric-${minecraft_version}:${geckolib_version}")
+
 	implementation("com.eliotlash.mclib:mclib:20")
 }
 

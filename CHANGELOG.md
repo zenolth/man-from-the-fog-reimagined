@@ -1,3 +1,2 @@
-- Removed the chase vignette (too buggy, mostly just caused a red screen)
-- Changed the chase theme
-- Removed night vision during a chase (was just a compensation for the vignette, since the vignette is gone, night vision during chase is useless)
+- Tweaked some The Man's pathfinding penalties
+- Added gamerules regarding spawning of The Man

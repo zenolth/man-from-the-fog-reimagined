@@ -4,6 +4,7 @@ import com.zen.fogman.entity.ModEntities;
 import com.zen.fogman.goals.custom.BreakDoorInstantGoal;
 import com.zen.fogman.item.ModItems;
 import com.zen.fogman.other.MathUtils;
+import com.zen.fogman.sounds.ManSoundInstance;
 import com.zen.fogman.sounds.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
@@ -13,6 +14,7 @@ import net.minecraft.entity.*;
 import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
+import net.minecraft.entity.ai.pathing.PathNodeType;
 import net.minecraft.entity.ai.pathing.SpiderNavigation;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -77,12 +79,13 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     private ManState state;
 
-    public EntityTrackingSoundInstance chaseSoundInstance;
+    public ManSoundInstance chaseSoundInstance;
 
     // Chase stuff
     private int cooldown;
     private long lastMoveTime;
     private long lastLungeTime;
+    private long lastBreakTime;
     private boolean didLunge = false;
 
     // Stare stuff
@@ -91,16 +94,27 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     public TheManEntity(EntityType<? extends TheManEntity> entityType, World world) {
         super(entityType, world);
 
+        this.setPathfindingPenalty(PathNodeType.UNPASSABLE_RAIL,0);
+        this.setPathfindingPenalty(PathNodeType.FENCE,0);
+        this.setPathfindingPenalty(PathNodeType.DOOR_WOOD_CLOSED,0);
+        this.setPathfindingPenalty(PathNodeType.DOOR_IRON_CLOSED,0);
+        this.setPathfindingPenalty(PathNodeType.DANGER_FIRE,-1);
+        this.setPathfindingPenalty(PathNodeType.DAMAGE_FIRE,-1);
+        this.setPathfindingPenalty(PathNodeType.LEAVES,0);
+        this.setPathfindingPenalty(PathNodeType.DANGER_POWDER_SNOW,-1);
+        this.setPathfindingPenalty(PathNodeType.TRAPDOOR,-1);
+
         this.lastMoveTime = MathUtils.tickToSec(this.getWorld().getTime());
         this.lastLungeTime = MathUtils.tickToSec(this.getWorld().getTime());
         this.stareTime = MathUtils.tickToSec(this.getWorld().getTime());
 
         this.lastTime = MathUtils.tickToSec(this.getWorld().getTime());
         this.lastHallucinationTime = MathUtils.tickToSec(this.getWorld().getTime());
+        this.lastBreakTime = MathUtils.tickToSec(this.getWorld().getTime());
         this.aliveTime = this.random2.nextLong(30,60);
 
         this.setState(ManState.values()[this.random2.nextInt(2,3)]);
-        this.chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,this.getSoundCategory(),1.0f,1.0f,this,this.getWorld().getTime());
+        this.chaseSoundInstance = new ManSoundInstance(ModSounds.MAN_CHASE,this.getSoundCategory(),1.0f,1.0f,this,this.getWorld().getTime());
     }
 
     /**
@@ -296,7 +310,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     public boolean isGlowing() {
-        return this.isChasing() && this.getTarget() != null && MathUtils.distanceTo(this,this.getTarget()) <= MAN_CHASE_DISTANCE / 4.0;
+        return this.isChasing() && this.getTarget() != null && MathUtils.distanceTo(this,this.getTarget()) <= MAN_CHASE_DISTANCE / 2.0;
     }
 
     @Override
@@ -359,15 +373,19 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return;
         }
 
-        for (BlockPos blockPos : BlockPos.iterateOutwards(this.getBlockPos(), 0, 2, 0)) {
-            BlockState blockState = serverWorld.getBlockState(blockPos);
-            if (blockState.isAir() || this.getBlockPos().getY() >= blockPos.getY()) {
-                continue;
+        if (MathUtils.tickToSec(serverWorld.getTime()) - this.lastBreakTime > 0.5) {
+            for (BlockPos blockPos : BlockPos.iterateOutwards(this.getBlockPos(), 0, 2, 0)) {
+                BlockState blockState = serverWorld.getBlockState(blockPos);
+                if (blockState.isAir() || this.getBlockPos().getY() >= blockPos.getY()) {
+                    continue;
+                }
+
+                if (blockState.getBlock().getHardness() <= 2.0 && blockState.getBlock().getHardness() >= 1.5) {
+                    serverWorld.breakBlock(blockPos, true);
+                }
             }
 
-            if (blockState.getBlock().getHardness() <= 2.0 && blockState.getBlock().getHardness() >= 1.5) {
-                serverWorld.breakBlock(blockPos, true);
-            }
+            this.lastBreakTime = MathUtils.tickToSec(serverWorld.getTime());
         }
     }
 
@@ -389,9 +407,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public void clientTick(MinecraftClient client) {
         this.updateTargetFov(client);
-        if (this.isChasing()) {
-            this.playChaseSound(client);
-        }
+        this.playChaseSound(client);
     }
 
     public void idleTick(ServerWorld serverWorld) {
@@ -624,12 +640,27 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return;
         }
 
+        if (client.player == null) {
+            return;
+        }
+
+        if (!this.isChasing()) {
+            client.getSoundManager().stop(this.chaseSoundInstance);
+            return;
+        }
+
         if (MathUtils.distanceTo(this,client.player) <= MAN_CHASE_DISTANCE) {
+            this.chaseSoundInstance.setVolumeModifier(1.0f);
             if (!client.getSoundManager().isPlaying(this.chaseSoundInstance)) {
                 client.getSoundManager().play(this.chaseSoundInstance);
             }
         } else {
-            client.getSoundManager().stop(this.chaseSoundInstance);
+            if (this.chaseSoundInstance.getVolumeModifier() > 0) {
+                this.chaseSoundInstance.setVolumeModifier(this.chaseSoundInstance.getVolumeModifier() - 0.1f);
+            }
+            if (this.chaseSoundInstance.getVolumeModifier() <= 0) {
+                client.getSoundManager().stop(this.chaseSoundInstance);
+            }
         }
     }
 
