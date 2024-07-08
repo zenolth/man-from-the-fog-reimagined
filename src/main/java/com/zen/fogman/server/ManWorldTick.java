@@ -1,8 +1,8 @@
 package com.zen.fogman.server;
 
-import com.zen.fogman.ManFromTheFog;
 import com.zen.fogman.entity.ModEntities;
-import com.zen.fogman.entity.custom.TheManEntity;
+import com.zen.fogman.entity.the_man.TheManEntity;
+import com.zen.fogman.entity.the_man.TheManUtils;
 import com.zen.fogman.gamerules.ModGamerules;
 import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
@@ -15,7 +15,9 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Random;
 
 public class ManWorldTick implements ServerTickEvents.EndWorldTick {
@@ -23,7 +25,17 @@ public class ManWorldTick implements ServerTickEvents.EndWorldTick {
     public static final float MAN_CREEPY_VOLUME = 5f;
 
     public static long lastRandomTime = 0;
+
     public static Random random = new Random();
+
+    @Nullable
+    public static ServerPlayerEntity getRandomAlivePlayer(ServerWorld serverWorld) {
+        List<ServerPlayerEntity> list = serverWorld.getPlayers(entity -> entity.isAlive() && entity.getWorld().getRegistryKey() == World.OVERWORLD && !entity.isSpectator() && !entity.isCreative());
+        if (list.isEmpty()) {
+            return null;
+        }
+        return list.get(random.nextInt(list.size()));
+    }
 
     /**
      * Generates a random position around position
@@ -52,8 +64,8 @@ public class ManWorldTick implements ServerTickEvents.EndWorldTick {
     }
 
     public static void spawnMan(ServerWorld serverWorld) {
-        ServerPlayerEntity player = serverWorld.getRandomAlivePlayer();
-        if (player == null || player.getWorld().getRegistryKey() != World.OVERWORLD) {
+        ServerPlayerEntity player = getRandomAlivePlayer(serverWorld);
+        if (player == null) {
             return;
         }
         Vec3d spawnPosition = getRandomSpawnPositionAtPoint(serverWorld,player.getBlockPos());
@@ -64,8 +76,8 @@ public class ManWorldTick implements ServerTickEvents.EndWorldTick {
     }
 
     public static void playCreepySound(ServerWorld serverWorld) {
-        ServerPlayerEntity player = serverWorld.getRandomAlivePlayer();
-        if (player == null || player.getWorld().getRegistryKey() != World.OVERWORLD) {
+        ServerPlayerEntity player = getRandomAlivePlayer(serverWorld);
+        if (player == null) {
             return;
         }
         Vec3d soundPosition = getRandomSpawnPositionAtPoint(serverWorld,player.getBlockPos());
@@ -80,7 +92,7 @@ public class ManWorldTick implements ServerTickEvents.EndWorldTick {
         if (serverWorld.isDay()) {
             return;
         }
-        if (TheManEntity.manExist(serverWorld)) {
+        if (TheManUtils.manExists(serverWorld) || TheManUtils.hallucinationsExists(serverWorld)) {
             return;
         }
 
@@ -90,8 +102,8 @@ public class ManWorldTick implements ServerTickEvents.EndWorldTick {
 
             int spawnChanceMul = gameRules.getBoolean(ModGamerules.MAN_SPAWN_CHANCE_SCALES) ? serverWorld.getPlayers().size() : 1;
 
-            if (random.nextFloat(0f,1f) < gameRules.get(ModGamerules.MAN_SPAWN_CHANCE).get() * spawnChanceMul) {
-                if (random.nextFloat(0f,1f) < gameRules.get(ModGamerules.MAN_AMBIENT_SOUND_CHANCE).get()) {
+            if (Math.random() < gameRules.get(ModGamerules.MAN_SPAWN_CHANCE).get() * spawnChanceMul) {
+                if (Math.random() < gameRules.get(ModGamerules.MAN_AMBIENT_SOUND_CHANCE).get()) {
                     playCreepySound(serverWorld);
                 } else {
                     spawnMan(serverWorld);

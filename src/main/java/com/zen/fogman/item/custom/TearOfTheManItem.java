@@ -4,11 +4,16 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.World;
 
 public class TearOfTheManItem extends Item {
+
+    private boolean hasEffects = false;
+
     public TearOfTheManItem(Settings settings) {
         super(settings);
     }
@@ -25,24 +30,33 @@ public class TearOfTheManItem extends Item {
 
     @Override
     public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
-        if (entity.isPlayer() && entity instanceof LivingEntity) {
+        if (!world.isClient()) {
+            if (entity.isPlayer() && entity instanceof ServerPlayerEntity player) {
 
-            if (selected || ((LivingEntity) entity).getOffHandStack() == stack) {
-                if (!((LivingEntity) entity).hasStatusEffect(StatusEffects.NIGHT_VISION)) {
-                    ((LivingEntity) entity).setStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION,10),entity);
+                if (selected || player.getOffHandStack() == stack) {
+                    if (!hasEffects) {
+                        if (!player.hasStatusEffect(StatusEffects.NIGHT_VISION)) {
+                            player.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, StatusEffectInstance.INFINITE));
+                        }
+
+                        if (!player.hasStatusEffect(StatusEffects.SPEED)) {
+                            player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, StatusEffectInstance.INFINITE));
+                        }
+                        hasEffects = true;
+                    }
+                } else {
+                    if (hasEffects) {
+                        if (player.hasStatusEffect(StatusEffects.NIGHT_VISION)) {
+                            player.removeStatusEffect(StatusEffects.NIGHT_VISION);
+                        }
+
+                        if (player.hasStatusEffect(StatusEffects.SPEED)) {
+                            player.removeStatusEffect(StatusEffects.SPEED);
+                        }
+                        hasEffects = false;
+                    }
                 }
 
-                if (!((LivingEntity) entity).hasStatusEffect(StatusEffects.SPEED)) {
-                    ((LivingEntity) entity).setStatusEffect(new StatusEffectInstance(StatusEffects.SPEED,10),entity);
-                }
-            } else {
-                if (((LivingEntity) entity).hasStatusEffect(StatusEffects.NIGHT_VISION)) {
-                    ((LivingEntity) entity).removeStatusEffect(StatusEffects.NIGHT_VISION);
-                }
-
-                if (((LivingEntity) entity).hasStatusEffect(StatusEffects.SPEED)) {
-                    ((LivingEntity) entity).removeStatusEffect(StatusEffects.SPEED);
-                }
             }
         }
         super.inventoryTick(stack, world, entity, slot, selected);

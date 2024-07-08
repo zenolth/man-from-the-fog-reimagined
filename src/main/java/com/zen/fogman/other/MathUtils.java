@@ -14,9 +14,17 @@ public class MathUtils {
     public static long tickToSec(long ticks) {
         return ticks / 20;
     }
-    public static long secToTick(long secs) {
-        return secs * 20;
+    public static int secToTick(long secs) {
+        return (int) (secs * 20);
     }
+
+    public static double tickToSec(double ticks) {
+        return ticks / 20;
+    }
+    public static int secToTick(double secs) {
+        return (int) (secs * 20);
+    }
+
     public static double angleBetween(double x1,double y1,double x2,double y2) {
         return Math.atan2(y1 - y2,x1 - x2);
     }
