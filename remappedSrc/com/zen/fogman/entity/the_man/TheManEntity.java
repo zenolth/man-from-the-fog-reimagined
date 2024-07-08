@@ -110,7 +110,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void initSounds() {
-        this.chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,this.getSoundCategory(),1.0f,1.0f,this,this.getWorld().getTime());
+        this.chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,this.getSoundCategory(),1.0f,1.0f,this,this.method_48926().getTime());
     }
 
     /* Attributes */
@@ -269,7 +269,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         } else {
             BlockPos blockPos = this.getStepSoundPos(pos);
             if (!pos.equals(blockPos)) {
-                BlockState blockState = this.getWorld().getBlockState(blockPos);
+                BlockState blockState = this.method_48926().getBlockState(blockPos);
                 if (blockState.isIn(BlockTags.COMBINATION_STEP_SOUND_BLOCKS)) {
                     this.playCombinationStepSounds(blockState, state);
                 } else {
@@ -365,7 +365,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 effect.getEffectType() != StatusEffects.POISON &&
                 effect.getEffectType() != StatusEffects.INVISIBILITY &&
                 effect.getEffectType() != StatusEffects.WEAKNESS &&
-                (getWorld().isDay() && effect.getEffectType() != StatusEffects.REGENERATION);
+                (method_48926().isDay() && effect.getEffectType() != StatusEffects.REGENERATION);
     }
 
     @Override
@@ -380,7 +380,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     protected void dropInventory() {
-        if (this.getWorld().isDay() || this.isHallucination()) {
+        if (this.method_48926().isDay() || this.isHallucination()) {
             return;
         }
         this.dropStack(new ItemStack(ModItems.TEAR_OF_THE_MAN,1));
@@ -587,10 +587,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     /* Ticking */
     public ServerWorld getServerWorld() {
-        if (this.getWorld().isClient()) {
+        if (this.method_48926().isClient()) {
             throw new Error("Attempt to get a ServerWorld in a Client thread");
         }
-        return (ServerWorld) this.getWorld();
+        return (ServerWorld) this.method_48926();
     }
 
     public void clientTick(MinecraftClient client) {
@@ -621,8 +621,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     protected void mobTick() {
-        if (!this.getWorld().isClient()) {
-            this.serverTick((ServerWorld) this.getWorld());
+        if (!this.method_48926().isClient()) {
+            this.serverTick((ServerWorld) this.method_48926());
         }
     }
 
@@ -689,14 +689,14 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return false;
         }
         if (getTarget() instanceof PlayerEntity player) {
-            if (!getWorld().isClient()) {
+            if (!method_48926().isClient()) {
 
                 Vec3d lookVector = player.getRotationVec(1.0f).normalize();
                 Vec3d direction = new Vec3d(this.getX() - player.getX(), this.getEyeY() - player.getEyeY(), this.getZ() - player.getZ());
                 double e = lookVector.dotProduct(direction.normalize());
 
                 return e > Math.cos(Math.toRadians(this.getTargetFOV())) &&
-                        this.getWorld().raycast(
+                        this.method_48926().raycast(
                                 new BlockStateRaycastContext(
                                         new Vec3d(this.getX(), this.getEyeY(), this.getZ()),
                                         new Vec3d(player.getX(), player.getEyeY(), player.getZ()),

@@ -18,7 +18,7 @@ public class TheManEntityHallucination extends TheManEntity {
     @Override
     protected void mobTick() {
         super.mobTick();
-        if (!this.getWorld().isClient()) {
+        if (!this.method_48926().isClient()) {
             if (this.isAlive()) {
                 this.setHealth(this.getHealth() - 4f);
             }

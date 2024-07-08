@@ -1,7 +1,3 @@
-- Completely rewritten The Man's entity class from the ground up
-- Slightly better performance
-- Better organized source code
-- New state system
-- The Man now has a 10% chance to block attacks
-- Made pathfinding less choppy (well at least I tried)
-- Stalk state reimplemented
+- Fixed hallucinations spawning hallucinations
+- State now get saved into NBT
+- Fixed hallucinations doing things they aren't supposed to do (there's a lot of things they aren't supposed to do)

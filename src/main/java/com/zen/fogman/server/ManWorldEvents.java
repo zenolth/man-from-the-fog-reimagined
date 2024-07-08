@@ -7,6 +7,8 @@ import com.zen.fogman.gamerules.ModGamerules;
 import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -20,11 +22,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Random;
 
-public class ManWorldTick implements ServerTickEvents.EndWorldTick {
+public class ManWorldEvents implements ServerWorldEvents.Load, ServerTickEvents.EndWorldTick {
 
     public static final float MAN_CREEPY_VOLUME = 5f;
 
-    public static long lastRandomTime = 0;
+    public static long spawnCooldown = MathUtils.secToTick(15.0);
 
     public static Random random = new Random();
 
@@ -85,6 +87,15 @@ public class ManWorldTick implements ServerTickEvents.EndWorldTick {
     }
 
     @Override
+    public void onWorldLoad(MinecraftServer server, ServerWorld serverWorld) {
+        if (serverWorld.getRegistryKey() != World.OVERWORLD) {
+            return;
+        }
+
+        spawnCooldown = MathUtils.secToTick(serverWorld.getGameRules().get(ModGamerules.MAN_SPAWN_INTERVAL).get());
+    }
+
+    @Override
     public void onEndTick(ServerWorld serverWorld) {
         if (serverWorld.isClient()) {
             return;
@@ -98,7 +109,7 @@ public class ManWorldTick implements ServerTickEvents.EndWorldTick {
 
         GameRules gameRules = serverWorld.getGameRules();
 
-        if (MathUtils.tickToSec(serverWorld.getTime()) - lastRandomTime > gameRules.get(ModGamerules.MAN_SPAWN_INTERVAL).get()) {
+        if (--spawnCooldown <= 0L) {
 
             int spawnChanceMul = gameRules.getBoolean(ModGamerules.MAN_SPAWN_CHANCE_SCALES) ? serverWorld.getPlayers().size() : 1;
 
@@ -110,7 +121,7 @@ public class ManWorldTick implements ServerTickEvents.EndWorldTick {
                 }
             }
 
-            lastRandomTime = MathUtils.tickToSec(serverWorld.getTime());
+            spawnCooldown = MathUtils.secToTick(gameRules.get(ModGamerules.MAN_SPAWN_INTERVAL).get());
         }
     }
 }

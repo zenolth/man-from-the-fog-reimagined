@@ -27,6 +27,13 @@
       "the_fog_is_coming:mansounds/attack6"
     ]
   },
+  "man_slash": {
+    "subtitle": "subtitles.the_fog_is_coming.man_slash",
+    "sounds": [
+      "the_fog_is_coming:mansounds/slash1",
+      "the_fog_is_coming:mansounds/slash2"
+    ]
+  },
   "man_spot": {
     "subtitle": "subtitles.the_fog_is_coming.man_spot",
     "sounds": [
