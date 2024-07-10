@@ -8,9 +8,9 @@ import net.minecraft.world.GameRules;
 public class ModGamerules {
 
     public static final GameRules.Key<GameRules.BooleanRule> MAN_SPAWN_CHANCE_SCALES = createRule("manSpawnChanceScales", GameRules.Category.SPAWNING, true);
-    public static final GameRules.Key<DoubleRule> MAN_SPAWN_CHANCE = createRule("manSpawnChance", GameRules.Category.SPAWNING, 0.23, 0, 1);
+    public static final GameRules.Key<DoubleRule> MAN_SPAWN_CHANCE = createRule("manSpawnChance", GameRules.Category.SPAWNING, 0.33, 0, 1);
     public static final GameRules.Key<DoubleRule> MAN_AMBIENT_SOUND_CHANCE = createRule("manAmbientSoundChance", GameRules.Category.SPAWNING, 0.55, 0, 1);
-    public static final GameRules.Key<DoubleRule> MAN_SPAWN_INTERVAL = createRule("manSpawnInterval", GameRules.Category.SPAWNING, 15.0, 5.0, 60.0);
+    public static final GameRules.Key<DoubleRule> MAN_SPAWN_INTERVAL = createRule("manSpawnInterval", GameRules.Category.SPAWNING, 10.0, 5.0, 60.0);
 
     //  HELPER FUNCTIONS
     // Double rules

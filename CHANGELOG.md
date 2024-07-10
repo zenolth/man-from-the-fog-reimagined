@@ -1,8 +1,5 @@
-- Added The Man's claws as a melee weapon
-  - The Man has a 45% chance to drop Claws when he dies, otherwise he drops 1-6 wither roses
-- Made pathfinding a tad bit faster
-- The Man now won't climb when there's a 1 block jump
-- Fixed The Man's glowing eyes
-- Fixed Tear of The Man not removing effects after dropping the item
-- The Man now instantly goes away when it's day
-- Removed old The Man's texture files
+- Tweaked animations a little bit
+- The Man will now break blocks in front of him if it's the shortest path (don't worry, he respects the doMobGriefing gamerule and he doesn't break valuables and containers)
+- The ambient sound now also plays when The Man spawns
+- Tweaked default game rules' values, so The Man spawns a little bit more often
+- The Man's lunge force is now lower, so he can now more accurately aim at players (at least that's what I think it does lol)

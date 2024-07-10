@@ -69,7 +69,11 @@ public class ManWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
         return getRandomSpawnPositionAtPoint(serverWorld,position,20,60);
     }
 
-    public static void spawnMan(ServerWorld serverWorld) {
+    public static void playCreepySound(ServerWorld serverWorld,double x, double y, double z) {
+        serverWorld.playSound(null,x,y,z, ModSounds.MAN_CREEPY, SoundCategory.AMBIENT,MAN_CREEPY_VOLUME,1f);
+    }
+
+    public static void spawnManAtRandomLocation(ServerWorld serverWorld) {
         ServerPlayerEntity player = getRandomAlivePlayer(serverWorld);
         if (player == null) {
             return;
@@ -80,18 +84,19 @@ public class ManWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
             man.setPosition(spawnPosition);
             man.setTarget(player);
             serverWorld.spawnEntity(man);
+            playCreepySound(serverWorld,spawnPosition.getX(),spawnPosition.getY(),spawnPosition.getZ());
         } else {
             man.discard();
         }
     }
 
-    public static void playCreepySound(ServerWorld serverWorld) {
+    public static void playCreepySoundAtRandomLocation(ServerWorld serverWorld) {
         ServerPlayerEntity player = getRandomAlivePlayer(serverWorld);
         if (player == null) {
             return;
         }
         Vec3d soundPosition = getRandomSpawnPositionAtPoint(serverWorld,player.getBlockPos());
-        serverWorld.playSound(null,soundPosition.getX(),soundPosition.getY(),soundPosition.getZ(), ModSounds.MAN_CREEPY, SoundCategory.AMBIENT,MAN_CREEPY_VOLUME,1f);
+        playCreepySound(serverWorld,soundPosition.getX(),soundPosition.getY(),soundPosition.getZ());
     }
 
     @Override
@@ -130,9 +135,9 @@ public class ManWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
 
             if (Math.random() < gameRules.get(ModGamerules.MAN_SPAWN_CHANCE).get() * spawnChanceMul) {
                 if (Math.random() < gameRules.get(ModGamerules.MAN_AMBIENT_SOUND_CHANCE).get()) {
-                    playCreepySound(serverWorld);
+                    playCreepySoundAtRandomLocation(serverWorld);
                 } else {
-                    spawnMan(serverWorld);
+                    spawnManAtRandomLocation(serverWorld);
                 }
             }
 

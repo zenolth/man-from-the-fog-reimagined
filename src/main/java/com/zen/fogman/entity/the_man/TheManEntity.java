@@ -1,6 +1,5 @@
 package com.zen.fogman.entity.the_man;
 
-import com.zen.fogman.ManFromTheFog;
 import com.zen.fogman.entity.ModEntities;
 import com.zen.fogman.entity.the_man.states.*;
 import com.zen.fogman.item.ModItems;
@@ -19,7 +18,6 @@ import net.minecraft.entity.ai.pathing.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.effect.StatusEffects;
@@ -30,7 +28,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
-import net.minecraft.predicate.BlockPredicate;
 import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
@@ -51,7 +48,7 @@ import software.bernie.geckolib.core.animation.AnimationState;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-import java.util.Optional;
+import java.util.Arrays;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
     public static final double MAN_SPEED = 0.48;
@@ -59,6 +56,35 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     public static final double MAN_MAX_SCAN_DISTANCE = 10000.0;
     public static final double MAN_BLOCK_CHANCE = 0.1;
     public static final int MAN_CHASE_DISTANCE = 200;
+
+    public static Block[] MAN_BREAK_WHITELIST = {
+            Blocks.CHEST,
+            Blocks.ENDER_CHEST,
+            Blocks.DIAMOND_BLOCK,
+            Blocks.DIAMOND_ORE,
+            Blocks.DEEPSLATE_DIAMOND_ORE,
+            Blocks.NETHERITE_BLOCK,
+            Blocks.ANCIENT_DEBRIS,
+            Blocks.EMERALD_BLOCK,
+            Blocks.EMERALD_ORE,
+            Blocks.DEEPSLATE_EMERALD_ORE,
+            Blocks.BEDROCK,
+            Blocks.BEEHIVE,
+            Blocks.BEE_NEST,
+            Blocks.ACACIA_LOG,
+            Blocks.RAIL,
+            Blocks.ACTIVATOR_RAIL,
+            Blocks.DETECTOR_RAIL,
+            Blocks.POWERED_RAIL,
+            Blocks.WATER,
+            Blocks.LAVA,
+            Blocks.CAULDRON,
+            Blocks.LAVA_CAULDRON,
+            Blocks.WATER_CAULDRON,
+            Blocks.BARREL,
+            Blocks.BARRIER,
+            Blocks.HOPPER
+    };
 
     /* NBT data names */
     public static final String MAN_STATE_NBT = "ManState";
@@ -148,7 +174,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     protected EntityNavigation createNavigation(World world) {
-        MobNavigation mobNavigation = new MobNavigation(this,world);
+        SpiderNavigation mobNavigation = new SpiderNavigation(this,world);
 
         mobNavigation.setCanEnterOpenDoors(true);
         mobNavigation.setCanPathThroughDoors(true);
@@ -515,7 +541,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public void lunge(double x, double y, double z, double verticalForce) {
         this.playLungeSound();
-        this.setVelocity(x - this.getX(),verticalForce + Math.abs(y - this.getY()),z - this.getZ());
+        this.setVelocity((x - this.getX()) / 2,verticalForce + Math.abs((y - this.getY()) / 4),(z - this.getZ()) / 2);
     }
 
     public void lunge(Vec3d position, double verticalForce) {
@@ -556,6 +582,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return world.raycast(new BlockStateRaycastContext(origin,target, BlockStatePredicate.ANY)).getType() != HitResult.Type.MISS;
     }
 
+    public boolean shouldBreak(BlockState blockState) {
+        return !Arrays.asList(MAN_BREAK_WHITELIST).contains(blockState.getBlock());
+    }
+
     public void breakBlocksAround() {
         if (this.isDead() || this.isClimbing() || this.isHallucination() || !this.getServerWorld().getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
             return;
@@ -571,10 +601,15 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         if (target != null && TheManEntity.isObstructed(serverWorld,this.getPos().subtract(0,1,0),target.getPos().subtract(0,1,0)) && this.getPath() != null && this.getPath().getLength() <= 1 && this.getVelocity().length() <= 0.3) {
             if (!lookBlockState.isAir() && lookBlockState.getBlock().getHardness() <= 2.0 && lookBlockState.getBlock().getHardness() >= 0.5) {
-                serverWorld.breakBlock(lookBlockPos,true);
-            }
-            if (!lookBlockState2.isAir() && lookBlockState2.getBlock().getHardness() <= 2.0 && lookBlockState2.getBlock().getHardness() >= 0.5) {
-                serverWorld.breakBlock(lookBlockPos.down(),true);
+                if (this.shouldBreak(lookBlockState)) {
+                    serverWorld.breakBlock(lookBlockPos,true);
+                }
+
+                if (!lookBlockState2.isAir() && lookBlockState2.getBlock().getHardness() <= 2.0 && lookBlockState2.getBlock().getHardness() >= 0.5) {
+                    if (this.shouldBreak(lookBlockState2)) {
+                        serverWorld.breakBlock(lookBlockPos.down(),true);
+                    }
+                }
             }
         }
 
