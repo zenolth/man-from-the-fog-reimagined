@@ -1,3 +1,8 @@
-- Fixed hallucinations spawning hallucinations
-- State now get saved into NBT
-- Fixed hallucinations doing things they aren't supposed to do (there's a lot of things they aren't supposed to do)
+- Added The Man's claws as a melee weapon
+  - The Man has a 45% chance to drop Claws when he dies, otherwise he drops 1-6 wither roses
+- Made pathfinding a tad bit faster
+- The Man now won't climb when there's a 1 block jump
+- Fixed The Man's glowing eyes
+- Fixed Tear of The Man not removing effects after dropping the item
+- The Man now instantly goes away when it's day
+- Removed old The Man's texture files

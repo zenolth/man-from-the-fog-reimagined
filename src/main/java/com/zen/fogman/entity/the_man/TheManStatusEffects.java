@@ -31,7 +31,7 @@ public class TheManStatusEffects {
     public static final StatusEffectInstance REGENERATION = new StatusEffectInstance(
             StatusEffects.REGENERATION,
             StatusEffectInstance.INFINITE,
-            1,
+            2,
             false,
             false
     );

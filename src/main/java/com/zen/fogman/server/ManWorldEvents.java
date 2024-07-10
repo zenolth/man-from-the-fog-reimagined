@@ -6,8 +6,10 @@ import com.zen.fogman.entity.the_man.TheManUtils;
 import com.zen.fogman.gamerules.ModGamerules;
 import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -22,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Random;
 
-public class ManWorldEvents implements ServerWorldEvents.Load, ServerTickEvents.EndWorldTick {
+public class ManWorldEvents implements ServerEntityEvents.Load, ServerWorldEvents.Load, ServerTickEvents.EndWorldTick {
 
     public static final float MAN_CREEPY_VOLUME = 5f;
 
@@ -48,9 +50,13 @@ public class ManWorldEvents implements ServerWorldEvents.Load, ServerTickEvents.
      * @return The generated position
      */
     public static Vec3d getRandomSpawnPositionAtPoint(ServerWorld serverWorld, BlockPos position, int minRange, int maxRange) {
+        position = serverWorld.getTopPosition(Heightmap.Type.WORLD_SURFACE,position).up();
+
         int xOffset = (random.nextBoolean() ? 1 : -1) * random.nextInt(minRange,maxRange);
         int zOffset = (random.nextBoolean() ? 1 : -1) * random.nextInt(minRange,maxRange);
-        return serverWorld.getTopPosition(Heightmap.Type.WORLD_SURFACE,position.add(xOffset,0,zOffset)).toCenterPos();
+        BlockPos spawnPosition = serverWorld.getTopPosition(Heightmap.Type.WORLD_SURFACE,position.add(xOffset,0,zOffset));
+
+        return spawnPosition.toCenterPos();
     }
 
     /**
@@ -60,9 +66,7 @@ public class ManWorldEvents implements ServerWorldEvents.Load, ServerTickEvents.
      * @return The generated position
      */
     public static Vec3d getRandomSpawnPositionAtPoint(ServerWorld serverWorld, BlockPos position) {
-        int xOffset = (random.nextBoolean() ? 1 : -1) * random.nextInt(20,60);
-        int zOffset = (random.nextBoolean() ? 1 : -1) * random.nextInt(20,60);
-        return serverWorld.getTopPosition(Heightmap.Type.WORLD_SURFACE,position.add(xOffset,0,zOffset)).toCenterPos();
+        return getRandomSpawnPositionAtPoint(serverWorld,position,20,60);
     }
 
     public static void spawnMan(ServerWorld serverWorld) {
@@ -72,9 +76,13 @@ public class ManWorldEvents implements ServerWorldEvents.Load, ServerTickEvents.
         }
         Vec3d spawnPosition = getRandomSpawnPositionAtPoint(serverWorld,player.getBlockPos());
         TheManEntity man = new TheManEntity(ModEntities.THE_MAN,serverWorld);
-        man.setPosition(spawnPosition);
-        man.setTarget(player);
-        serverWorld.spawnEntity(man);
+        if (man.canSpawn(serverWorld)) {
+            man.setPosition(spawnPosition);
+            man.setTarget(player);
+            serverWorld.spawnEntity(man);
+        } else {
+            man.discard();
+        }
     }
 
     public static void playCreepySound(ServerWorld serverWorld) {
@@ -84,6 +92,13 @@ public class ManWorldEvents implements ServerWorldEvents.Load, ServerTickEvents.
         }
         Vec3d soundPosition = getRandomSpawnPositionAtPoint(serverWorld,player.getBlockPos());
         serverWorld.playSound(null,soundPosition.getX(),soundPosition.getY(),soundPosition.getZ(), ModSounds.MAN_CREEPY, SoundCategory.AMBIENT,MAN_CREEPY_VOLUME,1f);
+    }
+
+    @Override
+    public void onLoad(Entity entity, ServerWorld serverWorld) {
+        if (entity instanceof TheManEntity theMan) {
+            theMan.onSpawn(serverWorld);
+        }
     }
 
     @Override

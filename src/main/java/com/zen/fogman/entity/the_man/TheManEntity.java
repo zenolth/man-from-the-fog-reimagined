@@ -1,5 +1,6 @@
 package com.zen.fogman.entity.the_man;
 
+import com.zen.fogman.ManFromTheFog;
 import com.zen.fogman.entity.ModEntities;
 import com.zen.fogman.entity.the_man.states.*;
 import com.zen.fogman.item.ModItems;
@@ -12,11 +13,13 @@ import net.minecraft.client.sound.SoundManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.TargetPredicate;
-import net.minecraft.entity.ai.pathing.PathNodeType;
+import net.minecraft.entity.ai.pathing.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.effect.StatusEffects;
@@ -24,7 +27,11 @@ import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
+import net.minecraft.predicate.BlockPredicate;
+import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -34,8 +41,8 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.BlockStateRaycastContext;
-import net.minecraft.world.World;
+import net.minecraft.world.*;
+import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
@@ -44,20 +51,28 @@ import software.bernie.geckolib.core.animation.AnimationState;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class TheManEntity extends HostileEntity implements GeoEntity {
-    public static final double MAN_SPEED = 0.54;
-    public static final double MAN_CLIMB_SPEED = 0.8;
-    public static final double MAN_MAX_SCAN_DISTANCE = 10000.0;
-    public static final int MAN_CHASE_DISTANCE = 200;
-    public static final double MAN_BLOCK_CHANCE = 0.1;
+import java.util.Optional;
 
+public class TheManEntity extends HostileEntity implements GeoEntity {
+    public static final double MAN_SPEED = 0.48;
+    public static final double MAN_CLIMB_SPEED = 0.6;
+    public static final double MAN_MAX_SCAN_DISTANCE = 10000.0;
+    public static final double MAN_BLOCK_CHANCE = 0.1;
+    public static final int MAN_CHASE_DISTANCE = 200;
+
+    /* NBT data names */
+    public static final String MAN_STATE_NBT = "ManState";
+    public static final String MAN_ALIVE_TICKS_NBT = "ManAliveTicks";
+
+    // Animation cache stuff
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
+
+    @Nullable
+    private Path path;
 
     /* Cooldowns */
     // Attack cooldown
     private long attackCooldown;
-    // Move cooldown
-    private long moveCooldown = 5;
     // Alive ticks
     private long aliveTicks;
 
@@ -78,19 +93,37 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.initSounds();
         this.initStates();
         this.initPathfindingPenalties();
-
-        switch (this.getRandom().nextBetween(0,2)) {
-            case 0:
-                this.setState(TheManState.STARE);
-                break;
-            case 1:
-                this.setState(TheManState.STALK);
-                break;
-        }
     }
 
     /* Initialization */
+
+    public void onSpawn(ServerWorld serverWorld) {
+        if (!this.isHallucination()) {
+            switch (this.getRandom().nextBetween(0,2)) {
+                case 0:
+                    this.setState(TheManState.STARE);
+                    break;
+                case 1:
+                    this.setState(TheManState.STALK);
+                    break;
+            }
+        } else {
+            this.startChase();
+        }
+
+    }
+
+    @Override
+    public void onSpawnPacket(EntitySpawnS2CPacket packet) {
+        super.onSpawnPacket(packet);
+        if (packet.getEntityData() == 0 && !this.getWorld().isClient()) {
+            this.onSpawn(this.getServerWorld());
+        }
+    }
+
     public void initPathfindingPenalties() {
+        this.setPathfindingPenalty(PathNodeType.WALKABLE,4.0f);
+        this.setPathfindingPenalty(PathNodeType.OPEN,2.0f);
         this.setPathfindingPenalty(PathNodeType.UNPASSABLE_RAIL,0);
         this.setPathfindingPenalty(PathNodeType.FENCE,0);
         this.setPathfindingPenalty(PathNodeType.DOOR_WOOD_CLOSED,0);
@@ -111,6 +144,18 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public void initSounds() {
         this.chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,this.getSoundCategory(),1.0f,1.0f,this,this.getWorld().getTime());
+    }
+
+    @Override
+    protected EntityNavigation createNavigation(World world) {
+        MobNavigation mobNavigation = new MobNavigation(this,world);
+
+        mobNavigation.setCanEnterOpenDoors(true);
+        mobNavigation.setCanPathThroughDoors(true);
+        mobNavigation.setCanSwim(true);
+        mobNavigation.setCanWalkOverFences(true);
+
+        return mobNavigation;
     }
 
     /* Attributes */
@@ -180,14 +225,18 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     @Override
     public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
-        nbt.putInt("manstate",this.getState().ordinal());
+        nbt.putInt(MAN_STATE_NBT,this.getState().ordinal());
+        nbt.putLong(MAN_ALIVE_TICKS_NBT,this.aliveTicks);
     }
 
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
-        if (nbt.contains("manstate")) {
-            this.setState(TheManState.values()[nbt.getInt("manstate")]);
+        if (nbt.contains(MAN_STATE_NBT)) {
+            this.setState(TheManState.values()[nbt.getInt(MAN_STATE_NBT)]);
+        }
+        if (nbt.contains(MAN_ALIVE_TICKS_NBT)) {
+            this.aliveTicks = nbt.getLong(MAN_ALIVE_TICKS_NBT);
         }
     }
 
@@ -359,6 +408,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     @Override
+    public boolean isFireImmune() {
+        return false;
+    }
+
+    @Override
     public boolean canHaveStatusEffect(StatusEffectInstance effect) {
         return effect.getEffectType() != StatusEffects.INSTANT_DAMAGE &&
                 effect.getEffectType() != StatusEffects.SLOWNESS &&
@@ -366,6 +420,16 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 effect.getEffectType() != StatusEffects.INVISIBILITY &&
                 effect.getEffectType() != StatusEffects.WEAKNESS &&
                 (getWorld().isDay() && effect.getEffectType() != StatusEffects.REGENERATION);
+    }
+
+    @Override
+    public boolean canSpawn(WorldView world) {
+        return !(TheManUtils.manExists(this.getServerWorld()) || TheManUtils.hallucinationsExists(this.getServerWorld()));
+    }
+
+    @Override
+    public boolean canSpawn(WorldAccess world, SpawnReason spawnReason) {
+        return this.canSpawn(world);
     }
 
     @Override
@@ -384,6 +448,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return;
         }
         this.dropStack(new ItemStack(ModItems.TEAR_OF_THE_MAN,1));
+        if (Math.random() < 0.45) {
+            this.dropStack(new ItemStack(ModItems.CLAWS,1));
+        } else {
+            this.dropStack(new ItemStack(Items.WITHER_ROSE,this.random.nextBetween(1,6)));
+        }
     }
 
     @Override
@@ -398,23 +467,29 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     public boolean damage(DamageSource source, float amount) {
-        Entity attacker = source.getAttacker();
+        if (this.getWorld().isNight()) {
+            Entity attacker = source.getAttacker();
 
-        if (attacker != null && !this.isHallucination()) {
+            if (attacker instanceof LivingEntity livingEntity && !livingEntity.getMainHandStack().isOf(ModItems.CLAWS) && !this.isHallucination()) {
 
-            if (attacker instanceof IronGolemEntity) {
-                attacker.damage(new DamageSource(source.getTypeRegistryEntry(),this),amount);
-                this.playCritSound();
+                if (attacker instanceof IronGolemEntity) {
+                    attacker.damage(new DamageSource(source.getTypeRegistryEntry(),this),amount);
+                    this.playCritSound();
 
-                return false;
+                    return false;
+                }
+
+                if (Math.random() < MAN_BLOCK_CHANCE) {
+                    attacker.damage(new DamageSource(source.getTypeRegistryEntry(),this),amount / 4f);
+                    this.playCritSound();
+
+                    this.aliveTicks -= 20;
+
+                    return false;
+                }
             }
 
-            if (Math.random() < MAN_BLOCK_CHANCE) {
-                attacker.damage(new DamageSource(source.getTypeRegistryEntry(),this),amount / 4f);
-                this.playCritSound();
-
-                return false;
-            }
+            this.aliveTicks += 10;
         }
 
         return super.damage(source, amount);
@@ -477,14 +552,33 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
+    public static boolean isObstructed(World world, Vec3d origin, Vec3d target) {
+        return world.raycast(new BlockStateRaycastContext(origin,target, BlockStatePredicate.ANY)).getType() != HitResult.Type.MISS;
+    }
+
     public void breakBlocksAround() {
-        if (this.isDead() || this.isHallucination()) {
+        if (this.isDead() || this.isClimbing() || this.isHallucination() || !this.getServerWorld().getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
             return;
         }
 
         ServerWorld serverWorld = this.getServerWorld();
+        LivingEntity target = this.getTarget();
 
-        for (BlockPos blockPos : BlockPos.iterateOutwards(this.getBlockPos(), 1, 2, 1)) {
+        Vec3d lookVector = this.getRotationVec(1.0f);;
+        BlockPos lookBlockPos = BlockPos.ofFloored(this.getEyePos().add(lookVector));
+        BlockState lookBlockState = serverWorld.getBlockState(lookBlockPos);
+        BlockState lookBlockState2 = serverWorld.getBlockState(lookBlockPos.down());
+
+        if (target != null && TheManEntity.isObstructed(serverWorld,this.getPos().subtract(0,1,0),target.getPos().subtract(0,1,0)) && this.getPath() != null && this.getPath().getLength() <= 1 && this.getVelocity().length() <= 0.3) {
+            if (!lookBlockState.isAir() && lookBlockState.getBlock().getHardness() <= 2.0 && lookBlockState.getBlock().getHardness() >= 0.5) {
+                serverWorld.breakBlock(lookBlockPos,true);
+            }
+            if (!lookBlockState2.isAir() && lookBlockState2.getBlock().getHardness() <= 2.0 && lookBlockState2.getBlock().getHardness() >= 0.5) {
+                serverWorld.breakBlock(lookBlockPos.down(),true);
+            }
+        }
+
+        for (BlockPos blockPos : BlockPos.iterateOutwards(this.getBlockPos().up(), 1, 1, 1)) {
             BlockState blockState = serverWorld.getBlockState(blockPos);
             if (blockState.isAir() || blockState.isOf(Blocks.LAVA) || blockState.isOf(Blocks.WATER)) {
                 continue;
@@ -570,11 +664,27 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
+    @Nullable
+    public Path getPath() {
+        return path;
+    }
+
+    public boolean hasPath() {
+        return this.getPath() != null;
+    }
+
+    @Nullable
+    public Path findPath(double x, double y, double z) {
+        return this.path = this.getNavigation().findPathTo(x, y, z, 0);
+    }
+
+    public Path findPath(Vec3d position) {
+        return this.findPath(position.getX(),position.getY(),position.getZ());
+    }
+
     public void moveTo(double x, double y, double z, double speed) {
-        if (--this.moveCooldown <= 0L) {
-            this.getNavigation().startMovingTo(x,y,z,speed);
-            this.moveCooldown = 5;
-        }
+        findPath(x,y,z);
+        this.getNavigation().startMovingAlong(this.getPath(),speed);
     }
 
     public void moveTo(Vec3d position, double speed) {
@@ -605,15 +715,21 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     public void serverTick(ServerWorld serverWorld) {
         if (--this.aliveTicks <= 0L) {
             this.despawn();
+            return;
+        }
+
+        if (this.isAlive() && this.isHallucination()) {
+            this.setHealth(this.getHealth() - 4f);
         }
 
         this.setTarget(serverWorld.getClosestPlayer(this.getX(),this.getY(),this.getZ(),MAN_MAX_SCAN_DISTANCE,TheManPredicates.TARGET_PREDICATE));
 
-        if (serverWorld.isDay() && this.hasStatusEffect(StatusEffects.REGENERATION)) {
-            this.removeStatusEffect(StatusEffects.REGENERATION);
+        if (serverWorld.isDay()) {
+            this.despawn();
+            return;
         }
 
-        this.setOnFire(serverWorld.isDay());
+        this.movementTick();
 
         this.getStateManager().tick(serverWorld);
         this.targetTick();
@@ -657,11 +773,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
-    @Override
-    public void tickMovement() {
-        super.tickMovement();
-
-        this.setClimbing(this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY());
+    public void movementTick() {
+        // If the target is higher than us, and it's more than 2 block tall, then we climb, otherwise, we don't do anything and let the
+        // pathfinding deal with moving and jumping
+        this.setClimbing(this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY() && Math.abs(this.getTarget().getBlockY() - this.getBlockY()) > 1);
 
         if (this.isSubmergedInWater()) {
             Vec3d oldVelocity = this.getVelocity();

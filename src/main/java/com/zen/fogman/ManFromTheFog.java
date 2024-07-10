@@ -7,6 +7,7 @@ import com.zen.fogman.server.ManWorldEvents;
 import com.zen.fogman.sounds.ModSounds;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import org.slf4j.Logger;
@@ -16,7 +17,7 @@ public class ManFromTheFog implements ModInitializer {
 	public static final String MOD_ID = "the_fog_is_coming";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-	public static final ManWorldEvents worldTick = new ManWorldEvents();
+	public static final ManWorldEvents worldEvents = new ManWorldEvents();
 
 	@Override
 	public void onInitialize() {
@@ -25,7 +26,8 @@ public class ManFromTheFog implements ModInitializer {
 		ModItems.registerModItems();
 		ModEntities.registerEntities();
 
-		ServerWorldEvents.LOAD.register(worldTick);
-		ServerTickEvents.END_WORLD_TICK.register(worldTick);
+		ServerEntityEvents.ENTITY_LOAD.register(worldEvents);
+		ServerWorldEvents.LOAD.register(worldEvents);
+		ServerTickEvents.END_WORLD_TICK.register(worldEvents);
 	}
 }

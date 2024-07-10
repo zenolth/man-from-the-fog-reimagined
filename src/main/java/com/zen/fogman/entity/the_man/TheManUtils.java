@@ -15,7 +15,7 @@ public class TheManUtils {
      * @return If any TheManEntityHallucination exist in serverWorld
      */
     public static boolean hallucinationsExists(ServerWorld serverWorld) {
-        return !serverWorld.getEntitiesByType(ModEntities.THE_MAN_HALLUCINATION, EntityPredicates.VALID_LIVING_ENTITY).isEmpty();
+        return !serverWorld.getEntitiesByType(ModEntities.THE_MAN_HALLUCINATION, TheManPredicates.VALID_MAN_HALLUCINATION).isEmpty();
     }
 
     /**
@@ -23,7 +23,7 @@ public class TheManUtils {
      * @return If any TheManEntity exist in serverWorld
      */
     public static boolean manExists(ServerWorld serverWorld) {
-        return !serverWorld.getEntitiesByType(ModEntities.THE_MAN, EntityPredicates.VALID_LIVING_ENTITY).isEmpty();
+        return !serverWorld.getEntitiesByType(ModEntities.THE_MAN, TheManPredicates.VALID_MAN).isEmpty();
     }
 
     public static void doLightning(ServerWorld serverWorld, double x, double y, double z) {
