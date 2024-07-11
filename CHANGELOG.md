@@ -1,5 +1,3 @@
-- Tweaked animations a little bit
-- The Man will now break blocks in front of him if it's the shortest path (don't worry, he respects the doMobGriefing gamerule and he doesn't break valuables and containers)
-- The ambient sound now also plays when The Man spawns
-- Tweaked default game rules' values, so The Man spawns a little bit more often
-- The Man's lunge force is now lower, so he can now more accurately aim at players (at least that's what I think it does lol)
+- Added 3 new creepy ambient sounds
+- Changed Stalk behavior (not going to spoil :) )
+- Added logging when the mod is being initialized (just in case)

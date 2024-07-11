@@ -3,6 +3,7 @@ package com.zen.fogman.entity.the_man;
 import com.zen.fogman.entity.ModEntities;
 import com.zen.fogman.entity.the_man.states.*;
 import com.zen.fogman.item.ModItems;
+import com.zen.fogman.mixininterfaces.AbstractClientPlayerInterface;
 import com.zen.fogman.other.MathUtils;
 import com.zen.fogman.sounds.ModSounds;
 import net.minecraft.block.*;
@@ -37,6 +38,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.*;
 import org.jetbrains.annotations.Nullable;
@@ -382,6 +384,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
 
         if (client.player.isInRange(this,MAN_CHASE_DISTANCE)) {
+
             if (!soundManager.isPlaying(this.chaseSoundInstance)) {
                 soundManager.play(this.chaseSoundInstance);
             }
@@ -582,8 +585,45 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return world.raycast(new BlockStateRaycastContext(origin,target, BlockStatePredicate.ANY)).getType() != HitResult.Type.MISS;
     }
 
-    public boolean shouldBreak(BlockState blockState) {
-        return !Arrays.asList(MAN_BREAK_WHITELIST).contains(blockState.getBlock());
+    public void chaseIfTooClose(double radius) {
+        if (this.getTarget() != null && this.getTarget().isInRange(this,radius)) {
+            this.startChase();
+        }
+    }
+
+    public void chaseIfTooClose() {
+        this.chaseIfTooClose(15);
+    }
+
+    public boolean shouldBreak(Block block) {
+        return !Arrays.asList(MAN_BREAK_WHITELIST).contains(block);
+    }
+
+    private void breakBlocksInWay(ServerWorld serverWorld, LivingEntity target) {
+        if (this.getTarget() == null || this.isMoving() || this.path == null || this.path.getLength() > 1 || !isObstructed(serverWorld,this.getPos().subtract(0,1,0),target.getPos().subtract(0,1,0))) {
+            return;
+        }
+
+        Vec3d lookVector = MathUtils.getRotationVector(0f,this.getYaw(1.0f));
+        BlockPos lookBlockPos = BlockPos.ofFloored(this.getEyePos().add(lookVector));
+
+        BlockState blockState = serverWorld.getBlockState(lookBlockPos);
+        BlockState blockStateDown = serverWorld.getBlockState(lookBlockPos.down());
+
+        Block block = blockState.getBlock();
+        Block blockDown = blockStateDown.getBlock();
+
+        if (!blockState.isAir() && block.getHardness() <= 2.0 && block.getHardness() >= 0.5) {
+            if (this.shouldBreak(block)) {
+                serverWorld.breakBlock(lookBlockPos,true);
+            }
+
+            if (!blockStateDown.isAir() && blockDown.getHardness() <= 2.0 && blockDown.getHardness() >= 0.5) {
+                if (this.shouldBreak(blockDown)) {
+                    serverWorld.breakBlock(lookBlockPos.down(),true);
+                }
+            }
+        }
     }
 
     public void breakBlocksAround() {
@@ -594,24 +634,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         ServerWorld serverWorld = this.getServerWorld();
         LivingEntity target = this.getTarget();
 
-        Vec3d lookVector = this.getRotationVec(1.0f);;
-        BlockPos lookBlockPos = BlockPos.ofFloored(this.getEyePos().add(lookVector));
-        BlockState lookBlockState = serverWorld.getBlockState(lookBlockPos);
-        BlockState lookBlockState2 = serverWorld.getBlockState(lookBlockPos.down());
-
-        if (target != null && TheManEntity.isObstructed(serverWorld,this.getPos().subtract(0,1,0),target.getPos().subtract(0,1,0)) && this.getPath() != null && this.getPath().getLength() <= 1 && this.getVelocity().length() <= 0.3) {
-            if (!lookBlockState.isAir() && lookBlockState.getBlock().getHardness() <= 2.0 && lookBlockState.getBlock().getHardness() >= 0.5) {
-                if (this.shouldBreak(lookBlockState)) {
-                    serverWorld.breakBlock(lookBlockPos,true);
-                }
-
-                if (!lookBlockState2.isAir() && lookBlockState2.getBlock().getHardness() <= 2.0 && lookBlockState2.getBlock().getHardness() >= 0.5) {
-                    if (this.shouldBreak(lookBlockState2)) {
-                        serverWorld.breakBlock(lookBlockPos.down(),true);
-                    }
-                }
-            }
-        }
+        this.breakBlocksInWay(serverWorld,target);
 
         for (BlockPos blockPos : BlockPos.iterateOutwards(this.getBlockPos().up(), 1, 1, 1)) {
             BlockState blockState = serverWorld.getBlockState(blockPos);
@@ -688,6 +711,13 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
         this.playAttackSound();
         this.playSlashSound();
+
+        if (this.getState() == TheManState.STALK) {
+            target.kill();
+            this.startChase();
+            return true;
+        }
+
         return super.tryAttack(target);
     }
 
@@ -700,15 +730,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     @Nullable
-    public Path getPath() {
-        return path;
-    }
-
-    public boolean hasPath() {
-        return this.getPath() != null;
-    }
-
-    @Nullable
     public Path findPath(double x, double y, double z) {
         return this.path = this.getNavigation().findPathTo(x, y, z, 0);
     }
@@ -718,8 +739,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void moveTo(double x, double y, double z, double speed) {
-        findPath(x,y,z);
-        this.getNavigation().startMovingAlong(this.getPath(),speed);
+        this.getNavigation().startMovingAlong(findPath(x, y, z),speed);
     }
 
     public void moveTo(Vec3d position, double speed) {
@@ -728,6 +748,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public void moveTo(Entity target, double speed) {
         this.moveTo(target.getX(),target.getY(),target.getZ(),speed);
+    }
+
+    public boolean isMoving() {
+        return this.getVelocity() != Vec3d.ZERO;
     }
 
     /* Ticking */
@@ -782,10 +806,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return;
         }
 
-        if (this.getTarget() != null && this.getTarget().isInRange(this,15)) {
-            this.startChase();
-        }
-
         if (this.getTarget().isDead() && this.getState() == TheManState.CHASE) {
             this.despawn();
         }
@@ -802,6 +822,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         if (client.player.isTarget(this, TargetPredicate.DEFAULT)) {
             float fov = client.options.getFov().getValue() * client.player.getFovMultiplier();
+
             if (this.getTargetFOV() != fov) {
                 this.setTargetFOV(fov);
             }

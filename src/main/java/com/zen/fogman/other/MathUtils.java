@@ -32,4 +32,14 @@ public class MathUtils {
     public static int toGoalTicks(int serverTicks) {
         return MathHelper.ceilDiv(serverTicks, 2);
     }
+
+    public static Vec3d getRotationVector(float pitch, float yaw) {
+        float f = pitch * (float) (Math.PI / 180.0);
+        float g = -yaw * (float) (Math.PI / 180.0);
+        float h = MathHelper.cos(g);
+        float i = MathHelper.sin(g);
+        float j = MathHelper.cos(f);
+        float k = MathHelper.sin(f);
+        return new Vec3d(i * j, -k, h * j);
+    }
 }

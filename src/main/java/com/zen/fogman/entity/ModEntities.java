@@ -28,8 +28,10 @@ public class ModEntities {
     );
 
     public static void registerEntities() {
+        ManFromTheFog.LOGGER.info("Registering Entities");
         FabricDefaultAttributeRegistry.register(THE_MAN, TheManEntity.createManAttributes());
         FabricDefaultAttributeRegistry.register(THE_MAN_HALLUCINATION, TheManEntity.createManAttributes());
+        ManFromTheFog.LOGGER.info("Registered Entities");
     }
 }
 

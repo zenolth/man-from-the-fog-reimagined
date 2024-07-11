@@ -2,6 +2,7 @@ package com.zen.fogman.client;
 
 import com.zen.fogman.entity.ModEntities;
 import com.zen.fogman.entity.the_man.TheManEntity;
+import com.zen.fogman.mixininterfaces.AbstractClientPlayerInterface;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.predicate.entity.EntityPredicates;
@@ -31,8 +32,15 @@ public class ManClientTick implements ClientTickEvents.EndTick {
                 EntityPredicates.VALID_ENTITY
         );
 
-        theManEntities.forEach(theManEntity -> {
-            theManEntity.clientTick(client);
-        });
+        if (!theManEntities.isEmpty()) {
+            theManEntities.forEach(theManEntity -> {
+                theManEntity.clientTick(client);
+            });
+        } else {
+            // Reset the fov when the man is not present
+            if (((AbstractClientPlayerInterface) client.player).getFovModifier() != 1.0) {
+                ((AbstractClientPlayerInterface) client.player).setFovModifier(1.0f);
+            }
+        }
     }
 }

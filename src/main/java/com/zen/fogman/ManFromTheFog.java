@@ -21,13 +21,17 @@ public class ManFromTheFog implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		LOGGER.info("Initializing %s".formatted(MOD_ID));
+
 		ModGamerules.registerGamerules();
 		ModSounds.registerSounds();
 		ModItems.registerModItems();
 		ModEntities.registerEntities();
 
+		ManFromTheFog.LOGGER.info("Registering Events");
 		ServerEntityEvents.ENTITY_LOAD.register(worldEvents);
 		ServerWorldEvents.LOAD.register(worldEvents);
 		ServerTickEvents.END_WORLD_TICK.register(worldEvents);
+		ManFromTheFog.LOGGER.info("Successfully initialized %s".formatted(MOD_ID));
 	}
 }

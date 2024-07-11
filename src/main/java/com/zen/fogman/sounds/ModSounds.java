@@ -42,6 +42,7 @@ public class ModSounds {
     }
 
     public static void registerSounds() {
+        ManFromTheFog.LOGGER.info("Registering SoundEvents");
         Registry.register(Registries.SOUND_EVENT,MAN_ALARM_ID,MAN_ALARM);
         Registry.register(Registries.SOUND_EVENT,MAN_PAIN_ID,MAN_PAIN);
         Registry.register(Registries.SOUND_EVENT,MAN_ATTACK_ID,MAN_ATTACK);
@@ -52,5 +53,6 @@ public class ModSounds {
         Registry.register(Registries.SOUND_EVENT,MAN_DEATH_ID,MAN_DEATH);
         Registry.register(Registries.SOUND_EVENT,MAN_LUNGE_ID,MAN_LUNGE);
         Registry.register(Registries.SOUND_EVENT,MAN_CREEPY_ID,MAN_CREEPY);
+        ManFromTheFog.LOGGER.info("Registered SoundEvents");
     }
 }

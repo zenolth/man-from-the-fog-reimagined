@@ -57,9 +57,10 @@ public class ModItems {
     }
 
     public static void registerModItems() {
-
+        ManFromTheFog.LOGGER.info("Registering Items");
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(ModItems::addItemsToIngredientItemsGroup);
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(ModItems::addItemsToCombatGroup);
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(ModItems::addItemsToSpawnEggsGroup);
+        ManFromTheFog.LOGGER.info("Registered Items");
     }
 }
