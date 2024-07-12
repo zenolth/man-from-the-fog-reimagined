@@ -1,11 +1,9 @@
 package com.zen.fogman.item.custom;
 
-import com.zen.fogman.other.MathUtils;
+import com.zen.fogman.other.Util;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -34,8 +32,8 @@ public class TearOfTheManItem extends Item {
         if (!world.isClient()) {
             if (entity.isPlayer() && entity instanceof ServerPlayerEntity player) {
                 if (selected || player.getOffHandStack() == stack) {
-                    player.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, MathUtils.secToTick(12)));
-                    player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, MathUtils.secToTick(12)));
+                    player.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, Util.secToTick(12)));
+                    player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, Util.secToTick(12)));
                 }
             }
         }

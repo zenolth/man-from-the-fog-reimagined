@@ -4,7 +4,7 @@ import com.zen.fogman.entity.ModEntities;
 import com.zen.fogman.entity.the_man.TheManEntity;
 import com.zen.fogman.entity.the_man.TheManUtils;
 import com.zen.fogman.gamerules.ModGamerules;
-import com.zen.fogman.other.MathUtils;
+import com.zen.fogman.other.Util;
 import com.zen.fogman.sounds.ModSounds;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -24,11 +24,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Random;
 
-public class ManWorldEvents implements ServerEntityEvents.Load, ServerWorldEvents.Load, ServerTickEvents.EndWorldTick {
+public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvents.Load, ServerTickEvents.EndWorldTick {
 
     public static final float MAN_CREEPY_VOLUME = 5f;
 
-    public static long spawnCooldown = MathUtils.secToTick(15.0);
+    public static long spawnCooldown = Util.secToTick(15.0);
 
     public static Random random = new Random();
 
@@ -44,29 +44,29 @@ public class ManWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
     /**
      * Generates a random position around position
      * @param serverWorld The World
-     * @param position Position to generate around
+     * @param origin Position to generate around
+     * @param direction Direction the "player" is looking into
      * @param minRange Minimum range to generate
      * @param maxRange Maximum range to generate
      * @return The generated position
      */
-    public static Vec3d getRandomSpawnPositionAtPoint(ServerWorld serverWorld, BlockPos position, int minRange, int maxRange) {
-        position = serverWorld.getTopPosition(Heightmap.Type.WORLD_SURFACE,position).up();
+    public static Vec3d getRandomSpawnBehindDirection(ServerWorld serverWorld, Vec3d origin, Vec3d direction, int minRange, int maxRange) {
+        direction = direction.multiply(-1);
+        direction = direction.multiply(random.nextInt(minRange,maxRange));
+        direction = direction.rotateY((float) Math.toRadians((random.nextFloat(-60,60))));
 
-        int xOffset = (random.nextBoolean() ? 1 : -1) * random.nextInt(minRange,maxRange);
-        int zOffset = (random.nextBoolean() ? 1 : -1) * random.nextInt(minRange,maxRange);
-        BlockPos spawnPosition = serverWorld.getTopPosition(Heightmap.Type.WORLD_SURFACE,position.add(xOffset,0,zOffset));
-
-        return spawnPosition.toCenterPos();
+        return serverWorld.getTopPosition(Heightmap.Type.WORLD_SURFACE,BlockPos.ofFloored(origin.add(direction))).toCenterPos();
     }
 
     /**
      * Generates a random position around position
      * @param serverWorld The World
-     * @param position Position to generate around
+     * @param origin Position to generate around
+     * @param direction Direction the "player" is looking into
      * @return The generated position
      */
-    public static Vec3d getRandomSpawnPositionAtPoint(ServerWorld serverWorld, BlockPos position) {
-        return getRandomSpawnPositionAtPoint(serverWorld,position,20,60);
+    public static Vec3d getRandomSpawnBehindDirection(ServerWorld serverWorld, Vec3d origin, Vec3d direction) {
+        return getRandomSpawnBehindDirection(serverWorld,origin,direction,20,60);
     }
 
     public static void playCreepySound(ServerWorld serverWorld,double x, double y, double z) {
@@ -78,13 +78,15 @@ public class ManWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
         if (player == null) {
             return;
         }
-        Vec3d spawnPosition = getRandomSpawnPositionAtPoint(serverWorld,player.getBlockPos());
+        Vec3d spawnPosition = getRandomSpawnBehindDirection(serverWorld,player.getPos(), Util.getRotationVector(0,player.getYaw(1.0f)));
         TheManEntity man = new TheManEntity(ModEntities.THE_MAN,serverWorld);
         if (man.canSpawn(serverWorld)) {
             man.setPosition(spawnPosition);
             man.setTarget(player);
             serverWorld.spawnEntity(man);
-            playCreepySound(serverWorld,spawnPosition.getX(),spawnPosition.getY(),spawnPosition.getZ());
+            if (!man.isSilent()) {
+                playCreepySound(serverWorld,spawnPosition.getX(),spawnPosition.getY(),spawnPosition.getZ());
+            }
         } else {
             man.discard();
         }
@@ -95,7 +97,7 @@ public class ManWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
         if (player == null) {
             return;
         }
-        Vec3d soundPosition = getRandomSpawnPositionAtPoint(serverWorld,player.getBlockPos());
+        Vec3d soundPosition = getRandomSpawnBehindDirection(serverWorld,player.getPos(), Util.getRotationVector(0,player.getYaw(1.0f)));
         playCreepySound(serverWorld,soundPosition.getX(),soundPosition.getY(),soundPosition.getZ());
     }
 
@@ -112,7 +114,7 @@ public class ManWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
             return;
         }
 
-        spawnCooldown = MathUtils.secToTick(serverWorld.getGameRules().get(ModGamerules.MAN_SPAWN_INTERVAL).get());
+        spawnCooldown = Util.secToTick(serverWorld.getGameRules().get(ModGamerules.MAN_SPAWN_INTERVAL).get());
     }
 
     @Override
@@ -141,7 +143,7 @@ public class ManWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
                 }
             }
 
-            spawnCooldown = MathUtils.secToTick(gameRules.get(ModGamerules.MAN_SPAWN_INTERVAL).get());
+            spawnCooldown = Util.secToTick(gameRules.get(ModGamerules.MAN_SPAWN_INTERVAL).get());
         }
     }
 }

@@ -2,7 +2,7 @@ package com.zen.fogman.entity.the_man.states;
 
 import com.zen.fogman.entity.the_man.TheManEntity;
 import com.zen.fogman.entity.the_man.TheManState;
-import com.zen.fogman.other.MathUtils;
+import com.zen.fogman.other.Util;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.world.ServerWorld;
 
@@ -10,7 +10,7 @@ public class StareState extends AbstractState {
 
     public static final double STARE_COOLDOWN = 4;
 
-    private long stareCooldown = MathUtils.secToTick(STARE_COOLDOWN);
+    private long stareCooldown = Util.secToTick(STARE_COOLDOWN);
 
     public StareState(TheManEntity mob) {
         super(mob);
@@ -41,10 +41,10 @@ public class StareState extends AbstractState {
                         this.mob.setState(TheManState.FLEE);
                         break;
                 }
-                this.stareCooldown = MathUtils.secToTick(STARE_COOLDOWN);
+                this.stareCooldown = Util.secToTick(STARE_COOLDOWN);
             }
         } else {
-            this.stareCooldown = MathUtils.secToTick(STARE_COOLDOWN);
+            this.stareCooldown = Util.secToTick(STARE_COOLDOWN);
         }
     }
 }

@@ -1,3 +1,6 @@
-- Added 3 new creepy ambient sounds
-- Changed Stalk behavior (not going to spoil :) )
-- Added logging when the mod is being initialized (just in case)
+- Added custom main menu panorama
+- Added custom main menu splash texts
+- Changed how "looking at me" check is calculated (way more accurate)
+- Fixed Tear of the Man adding infinite Speed and Night vision when throwing it away (temporary fix)
+- Fixed The Man not disappearing when his target dies
+- 

@@ -70,6 +70,15 @@
       "the_fog_is_coming:mansounds/lunge"
     ]
   },
+  "man_lungeattack": {
+    "sounds": [
+      "the_fog_is_coming:mansounds/lunge_attack1",
+      "the_fog_is_coming:mansounds/lunge_attack2",
+      "the_fog_is_coming:mansounds/lunge_attack3",
+      "the_fog_is_coming:mansounds/lunge_attack4",
+      "the_fog_is_coming:mansounds/lunge_attack5"
+    ]
+  },
   "man_creepy": {
     "subtitle": "subtitles.the_fog_is_coming.man_creepy",
     "sounds": [

@@ -25,7 +25,7 @@ public class TheManPredicates {
             return false;
         }
         PlayerEntity player = (PlayerEntity) entity;
-        return player.isAlive() && !player.isCreative() && !player.isSpectator();
+        return !player.isCreative() && !player.isSpectator();
     };
 
     public static final Predicate<Entity> VALID_MAN = entity ->

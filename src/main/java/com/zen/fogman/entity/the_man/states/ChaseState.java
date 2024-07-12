@@ -3,7 +3,7 @@ package com.zen.fogman.entity.the_man.states;
 import com.zen.fogman.entity.the_man.TheManEntity;
 import com.zen.fogman.entity.the_man.TheManPredicates;
 import com.zen.fogman.entity.the_man.TheManStatusEffects;
-import com.zen.fogman.other.MathUtils;
+import com.zen.fogman.other.Util;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -16,8 +16,8 @@ public class ChaseState extends AbstractState {
     public static final double HALLUCINATION_COOLDOWN = 60;
     public static final double HALLUCINATION_CHANCE = 0.1;
 
-    private long lungeCooldown = MathUtils.secToTick(LUNGE_COOLDOWN);
-    private long hallucinationCooldown = MathUtils.secToTick(HALLUCINATION_COOLDOWN);
+    private long lungeCooldown = Util.secToTick(LUNGE_COOLDOWN);
+    private long hallucinationCooldown = Util.secToTick(HALLUCINATION_COOLDOWN);
 
     public ChaseState(TheManEntity mob) {
         super(mob);
@@ -41,14 +41,15 @@ public class ChaseState extends AbstractState {
         this.mob.moveTo(target,1.0);
 
         if (--this.lungeCooldown <= 0L) {
-            this.lungeCooldown = MathUtils.secToTick(LUNGE_COOLDOWN);
+            this.lungeCooldown = Util.secToTick(LUNGE_COOLDOWN);
             if (Math.random() < LUNGE_CHANCE) {
+                this.mob.setLunging(false);
                 this.mob.lunge(target,0.6);
             }
         }
 
         if (--this.hallucinationCooldown <= 0L) {
-            this.hallucinationCooldown = MathUtils.secToTick(HALLUCINATION_COOLDOWN);
+            this.hallucinationCooldown = Util.secToTick(HALLUCINATION_COOLDOWN);
             if (Math.random() < HALLUCINATION_CHANCE) {
                 this.mob.spawnHallucinations();
             }

@@ -3,11 +3,13 @@ package com.zen.fogman.entity.the_man;
 import com.zen.fogman.entity.ModEntities;
 import com.zen.fogman.entity.the_man.states.*;
 import com.zen.fogman.item.ModItems;
-import com.zen.fogman.mixininterfaces.AbstractClientPlayerInterface;
-import com.zen.fogman.other.MathUtils;
+import com.zen.fogman.other.Util;
 import com.zen.fogman.sounds.ModSounds;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.Camera;
 import net.minecraft.client.sound.EntityTrackingSoundInstance;
 import net.minecraft.client.sound.SoundManager;
 import net.minecraft.entity.Entity;
@@ -24,10 +26,10 @@ import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.registry.tag.BlockTags;
@@ -36,12 +38,13 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.*;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
@@ -110,11 +113,14 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     // Sound instances
     private EntityTrackingSoundInstance chaseSoundInstance;
 
+    // Booleans
+    private boolean lookedAt = false;
+
     public TheManEntity(EntityType<? extends TheManEntity> entityType, World world) {
         super(entityType,world);
 
-        this.attackCooldown = MathUtils.secToTick(this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_SPEED));
-        this.aliveTicks = MathUtils.secToTick(this.getRandom().nextBetween(30,120));
+        this.attackCooldown = Util.secToTick(this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_SPEED));
+        this.aliveTicks = Util.secToTick(this.getRandom().nextBetween(30,120));
         this.stateManager = new StateManager(this);
 
         this.addStatusEffects();
@@ -191,7 +197,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return TheManEntity.createHostileAttributes()
                 .add(EntityAttributes.GENERIC_MAX_HEALTH,350)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED,MAN_SPEED)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE,5)
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE,7)
                 .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK,4)
                 .add(EntityAttributes.GENERIC_ATTACK_SPEED,0.4)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE,MAN_MAX_SCAN_DISTANCE)
@@ -228,7 +234,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         super.initDataTracker();
         this.getDataTracker().startTracking(TheManDataTrackers.CLIMBING,false);
         this.getDataTracker().startTracking(TheManDataTrackers.STATE,TheManState.STARE.ordinal());
-        this.getDataTracker().startTracking(TheManDataTrackers.TARGET_FOV,90f);
+        this.getDataTracker().startTracking(TheManDataTrackers.IS_LUNGING,false);
     }
 
     public void setClimbing(boolean climbing) {
@@ -240,12 +246,27 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return this.getDataTracker().get(TheManDataTrackers.CLIMBING);
     }
 
-    public void setTargetFOV(float fov) {
-        this.getDataTracker().set(TheManDataTrackers.TARGET_FOV,fov);
+    public void setLookedAt(boolean lookedAt) {
+        if (this.getWorld().isClient()) {
+            PacketByteBuf packet = PacketByteBufs.create();
+            packet.writeInt(this.getId());
+            packet.writeBoolean(lookedAt);
+            ClientPlayNetworking.send(TheManPackets.LOOKED_AT_PACKET_ID,packet);
+        } else {
+            this.lookedAt = lookedAt;
+        }
     }
 
-    public float getTargetFOV() {
-        return this.getDataTracker().get(TheManDataTrackers.TARGET_FOV);
+    public boolean isLookedAt() {
+        return this.lookedAt;
+    }
+
+    public void setLunging(boolean lunging) {
+        this.getDataTracker().set(TheManDataTrackers.IS_LUNGING,lunging);
+    }
+
+    public boolean isLunging() {
+        return this.getDataTracker().get(TheManDataTrackers.IS_LUNGING);
     }
 
     /* NBT data */
@@ -283,7 +304,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this,"controller", MathUtils.secToTick(0.1),this::predictate));
+        controllers.add(new AnimationController<>(this,"controller", Util.secToTick(0.1),this::predictate));
     }
 
     @Override
@@ -325,6 +346,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public void playAttackSound() {
         this.playSound(ModSounds.MAN_ATTACK,this.getSoundVolume(),this.getSoundPitch());
+    }
+
+    public void playLungeAttackSound() {
+        this.playSound(ModSounds.MAN_LUNGE,this.getLoudSoundVolume(),this.getSoundPitch());
     }
 
     @Override
@@ -468,7 +493,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     public boolean isAiDisabled() {
-        return false;
+        return super.isAiDisabled();
     }
 
     @Override
@@ -543,8 +568,13 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void lunge(double x, double y, double z, double verticalForce) {
+        if (this.isLunging()) {
+            return;
+        }
         this.playLungeSound();
-        this.setVelocity((x - this.getX()) / 2,verticalForce + Math.abs((y - this.getY()) / 4),(z - this.getZ()) / 2);
+        this.playLungeAttackSound();
+        this.setVelocity((x - this.getX()) / 4,verticalForce + Math.abs((y - this.getY()) / 4),(z - this.getZ()) / 4);
+        this.setLunging(true);
     }
 
     public void lunge(Vec3d position, double verticalForce) {
@@ -604,7 +634,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return;
         }
 
-        Vec3d lookVector = MathUtils.getRotationVector(0f,this.getYaw(1.0f));
+        Vec3d lookVector = Util.getRotationVector(0f,this.getYaw(1.0f));
         BlockPos lookBlockPos = BlockPos.ofFloored(this.getEyePos().add(lookVector));
 
         BlockState blockState = serverWorld.getBlockState(lookBlockPos);
@@ -723,7 +753,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public void attack(LivingEntity target) {
         if (this.isInAttackRange(target) && --this.attackCooldown <= 0L) {
-            this.attackCooldown = MathUtils.secToTick(this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_SPEED));
+            this.attackCooldown = Util.secToTick(this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_SPEED));
             this.swingHand(Hand.MAIN_HAND);
             this.tryAttack(target);
         }
@@ -754,6 +784,19 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return this.getVelocity() != Vec3d.ZERO;
     }
 
+    @Override
+    public boolean isSilent() {
+        return this.getState() == TheManState.STALK;
+    }
+
+    @Nullable
+    @Override
+    public LivingEntity getTarget() {
+        LivingEntity target = this.getServerWorld().getClosestPlayer(this.getX(),this.getY(),this.getZ(),MAN_MAX_SCAN_DISTANCE,TheManPredicates.TARGET_PREDICATE);
+        this.setTarget(target);
+        return target;
+    }
+
     /* Ticking */
     public ServerWorld getServerWorld() {
         if (this.getWorld().isClient()) {
@@ -763,7 +806,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void clientTick(MinecraftClient client) {
-        if (this.isHallucination() || this.isDead()) {
+        if (this.isHallucination() || this.isDead() || client.isPaused()) {
             return;
         }
 
@@ -772,6 +815,15 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void serverTick(ServerWorld serverWorld) {
+        if (this.isAiDisabled()) {
+            return;
+        }
+
+        if (this.getTarget() != null && this.getTarget().isDead()) {
+            this.despawn();
+            return;
+        }
+
         if (--this.aliveTicks <= 0L) {
             this.despawn();
             return;
@@ -781,8 +833,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             this.setHealth(this.getHealth() - 4f);
         }
 
-        this.setTarget(serverWorld.getClosestPlayer(this.getX(),this.getY(),this.getZ(),MAN_MAX_SCAN_DISTANCE,TheManPredicates.TARGET_PREDICATE));
-
         if (serverWorld.isDay()) {
             this.despawn();
             return;
@@ -791,6 +841,23 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.movementTick();
 
         this.getStateManager().tick(serverWorld);
+
+        if (this.isLunging() && this.isOnGround()) {
+            this.setLunging(false);
+        }
+
+        // If we are right above target, we move with the same velocity as the target and also down
+        if (this.isLunging() && this.getTarget() != null) {
+            Vec3d origin = new Vec3d(this.getX(),0,this.getZ());
+            Vec3d target = new Vec3d(this.getTarget().getX(),0,this.getTarget().getZ());
+            Vec3d targetVelocity = this.getTarget().getVelocity();
+
+            if (target.isInRange(origin,10)) {
+                this.setVelocity(targetVelocity.getX(),-2,targetVelocity.getZ());
+                this.setLunging(false);
+            }
+        }
+
         this.targetTick();
     }
 
@@ -821,10 +888,27 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
 
         if (client.player.isTarget(this, TargetPredicate.DEFAULT)) {
-            float fov = client.options.getFov().getValue() * client.player.getFovMultiplier();
+            Camera camera = client.gameRenderer.getCamera();
 
-            if (this.getTargetFOV() != fov) {
-                this.setTargetFOV(fov);
+            BlockHitResult result = this.getWorld().raycast(
+                    new BlockStateRaycastContext(
+                            new Vec3d(this.getX(), this.getEyeY(), this.getZ()),
+                            camera.getPos(),
+                            TheManPredicates.BLOCK_STATE_PREDICATE
+                    )
+            );
+
+            if (result.getType() != HitResult.Type.MISS) {
+                this.setLookedAt(false);
+            } else {
+                float fov = client.options.getFov().getValue() * client.player.getFovMultiplier();
+
+                Matrix4f projection = client.gameRenderer.getBasicProjectionMatrix(fov);
+                projection.rotate(camera.getRotation());
+
+                boolean inView = Util.isInView(projection,camera.getPos(),Util.getRotationVector(camera.getPitch(),camera.getYaw()),this.getPos());
+
+                this.setLookedAt(inView);
             }
         }
     }
@@ -851,33 +935,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     /* Other */
-    /**
-     * Checks if The Man is being looked at
-     * @return  If The Man is being looked at or not
-     */
-    public boolean isLookedAt() {
-        if (getTarget() == null) {
-            return false;
-        }
-        if (getTarget() instanceof PlayerEntity player) {
-            if (!getWorld().isClient()) {
-
-                Vec3d lookVector = player.getRotationVec(1.0f).normalize();
-                Vec3d direction = new Vec3d(this.getX() - player.getX(), this.getEyeY() - player.getEyeY(), this.getZ() - player.getZ());
-                double e = lookVector.dotProduct(direction.normalize());
-
-                return e > Math.cos(Math.toRadians(this.getTargetFOV())) &&
-                        this.getWorld().raycast(
-                                new BlockStateRaycastContext(
-                                        new Vec3d(this.getX(), this.getEyeY(), this.getZ()),
-                                        new Vec3d(player.getX(), player.getEyeY(), player.getZ()),
-                                        TheManPredicates.BLOCK_STATE_PREDICATE
-                                )
-                        ).getType() == HitResult.Type.MISS;
-            }
-        }
-        return false;
-    }
 
     public void addEffectToClosePlayers(ServerWorld world, StatusEffectInstance statusEffectInstance) {
         if (this.isHallucination()) {
