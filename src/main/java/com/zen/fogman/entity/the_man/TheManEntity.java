@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.Frustum;
 import net.minecraft.client.sound.EntityTrackingSoundInstance;
 import net.minecraft.client.sound.SoundManager;
 import net.minecraft.entity.Entity;
@@ -889,6 +890,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         if (client.player.isTarget(this, TargetPredicate.DEFAULT)) {
             Camera camera = client.gameRenderer.getCamera();
+            Vec3d cameraLookVector = Util.getRotationVector(camera.getPitch(),camera.getYaw()).normalize();
 
             BlockHitResult result = this.getWorld().raycast(
                     new BlockStateRaycastContext(
@@ -903,12 +905,17 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             } else {
                 float fov = client.options.getFov().getValue() * client.player.getFovMultiplier();
 
-                Matrix4f projection = client.gameRenderer.getBasicProjectionMatrix(fov);
-                projection.rotate(camera.getRotation());
+                Matrix4f projectionMatrix = client.gameRenderer.getBasicProjectionMatrix(fov);
+                Matrix4f viewMatrix = new Matrix4f();
+                viewMatrix = viewMatrix.lookAt(
+                        camera.getPos().toVector3f(),
+                        camera.getPos().toVector3f().add(cameraLookVector.toVector3f()),
+                        cameraLookVector.rotateX((float) Math.toRadians(90)).toVector3f()
+                );
 
-                boolean inView = Util.isInView(projection,camera.getPos(),Util.getRotationVector(camera.getPitch(),camera.getYaw()),this.getPos());
+                Frustum frustum = new Frustum(viewMatrix,projectionMatrix);
 
-                this.setLookedAt(inView);
+                this.setLookedAt(frustum.isVisible(this.getBoundingBox()));
             }
         }
     }

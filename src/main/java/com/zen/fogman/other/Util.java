@@ -46,32 +46,4 @@ public class Util {
         float k = MathHelper.sin(f);
         return new Vec3d(i * j, -k, h * j);
     }
-
-    public static Vec2f worldToScreen(Matrix4f projection, Vector3f cameraPosition, Vector3f worldPosition) {
-        Vector4f cameraCoords = new Vector4f(worldPosition.x,worldPosition.y,worldPosition.z,0f).sub(new Vector4f(cameraPosition.x,cameraPosition.y,cameraPosition.z,0f));
-        Vector4f projectedCoords = projection.transform(cameraCoords);
-
-        float xNDC = projectedCoords.x / projectedCoords.w;
-        float yNDC = projectedCoords.y / projectedCoords.w;
-
-        float xScreen = (xNDC + 1f) * 0.5f;
-        float yScreen = (yNDC + 1f) * 0.5f;
-
-        return new Vec2f(xScreen,yScreen);
-    }
-
-    public static boolean isInView(Matrix4f projection,Vec3d cameraPosition,Vec3d cameraForward,Vec3d point) {
-
-        Vec3d toPoint = point.subtract(cameraPosition).normalize();
-        double dot = cameraForward.dotProduct(toPoint);
-
-        // Point is behind the camera, don't calculate other stuff because it's USELESS
-        if (dot < 0) {
-            return false;
-        }
-
-        Vec2f screenPos = worldToScreen(projection,cameraPosition.toVector3f(),point.toVector3f());
-
-        return screenPos.x > 0f && screenPos.x < 1.5f;
-    }
 }

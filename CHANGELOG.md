@@ -1,6 +1,3 @@
-- Added custom main menu panorama
-- Added custom main menu splash texts
-- Changed how "looking at me" check is calculated (way more accurate)
-- Fixed Tear of the Man adding infinite Speed and Night vision when throwing it away (temporary fix)
-- Fixed The Man not disappearing when his target dies
-- 
+- Changed how "looking at me" check is calculated again
+  - Now it works even better and it also takes the hitbox/bounding box into account
+- Added some more splash texts
