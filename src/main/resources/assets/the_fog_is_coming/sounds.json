@@ -1,4 +1,14 @@
 {
+  "night_ambience": {
+    "sounds": [
+      "the_fog_is_coming:ambience/nightambience1",
+      "the_fog_is_coming:ambience/nightambience2",
+      "the_fog_is_coming:ambience/nightambience3",
+      "the_fog_is_coming:ambience/nightambience4",
+      "the_fog_is_coming:ambience/nightambience5"
+    ]
+  },
+
   "man_alarm": {
     "subtitle": "subtitles.the_fog_is_coming.man_alarm",
     "sounds": [

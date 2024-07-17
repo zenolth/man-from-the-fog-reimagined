@@ -5,6 +5,8 @@ import com.zen.fogman.entity.the_man.states.*;
 import com.zen.fogman.item.ModItems;
 import com.zen.fogman.other.Util;
 import com.zen.fogman.sounds.ModSounds;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.block.*;
@@ -58,7 +60,7 @@ import java.util.Arrays;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
     public static final double MAN_SPEED = 0.48;
-    public static final double MAN_CLIMB_SPEED = 0.6;
+    public static final double MAN_CLIMB_SPEED = 0.7;
     public static final double MAN_MAX_SCAN_DISTANCE = 10000.0;
     public static final double MAN_BLOCK_CHANCE = 0.1;
     public static final int MAN_CHASE_DISTANCE = 200;
@@ -107,15 +109,21 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     private long attackCooldown;
     // Alive ticks
     private long aliveTicks;
+    // Block check ticks
+    private long checkCooldown;
 
     // State manager
     private final StateManager stateManager;
 
     // Sound instances
+    @Environment(EnvType.CLIENT)
     private EntityTrackingSoundInstance chaseSoundInstance;
 
     // Booleans
     private boolean lookedAt = false;
+
+    // Velocities
+    private Vec3d climbPosition = Vec3d.ZERO;
 
     public TheManEntity(EntityType<? extends TheManEntity> entityType, World world) {
         super(entityType,world);
@@ -125,7 +133,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.stateManager = new StateManager(this);
 
         this.addStatusEffects();
-        this.initSounds();
         this.initStates();
         this.initPathfindingPenalties();
     }
@@ -133,6 +140,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     /* Initialization */
 
     public void onSpawn(ServerWorld serverWorld) {
+        this.setNoGravity(false);
+        this.setNoDrag(false);
         if (!this.isHallucination()) {
             switch (this.getRandom().nextBetween(0,2)) {
                 case 0:
@@ -178,7 +187,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void initSounds() {
-        this.chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,this.getSoundCategory(),1.0f,1.0f,this,this.getWorld().getTime());
+        if (this.chaseSoundInstance == null) {
+            this.chaseSoundInstance = new EntityTrackingSoundInstance(ModSounds.MAN_CHASE,this.getSoundCategory(),1.0f,1.0f,this,this.getWorld().getTime());
+        }
     }
 
     @Override
@@ -242,9 +253,13 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.getDataTracker().set(TheManDataTrackers.CLIMBING, climbing);
     }
 
+    public boolean climbing() {
+        return this.getDataTracker().get(TheManDataTrackers.CLIMBING);
+    }
+
     @Override
     public boolean isClimbing() {
-        return this.getDataTracker().get(TheManDataTrackers.CLIMBING);
+        return false;
     }
 
     public void setLookedAt(boolean lookedAt) {
@@ -292,7 +307,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     /* Animations */
     private PlayState predictate(AnimationState<TheManEntity> event) {
-        if (this.isClimbing()) {
+        if (this.climbing()) {
             return event.setAndContinue(TheManAnimations.CLIMB);
         }
 
@@ -350,7 +365,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void playLungeAttackSound() {
-        this.playSound(ModSounds.MAN_LUNGE,this.getLoudSoundVolume(),this.getSoundPitch());
+        this.playSound(ModSounds.MAN_LUNGE_ATTACK,this.getLoudSoundVolume(),this.getSoundPitch());
     }
 
     @Override
@@ -426,9 +441,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
      */
     public void stopSounds() {
         if (!this.isHallucination()) {
-            MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_CHASE_ID,this.getSoundCategory());
+            MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_CHASE.getId(),this.getSoundCategory());
         }
-        MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_IDLECALM_ID,this.getSoundCategory());
+        MinecraftClient.getInstance().getSoundManager().stopSounds(ModSounds.MAN_IDLECALM.getId(),this.getSoundCategory());
     }
 
     /* Properties and Behavior */
@@ -658,7 +673,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void breakBlocksAround() {
-        if (this.isDead() || this.isClimbing() || this.isHallucination() || !this.getServerWorld().getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
+        if (this.isDead() || this.climbing() || this.isHallucination() || !this.getServerWorld().getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
             return;
         }
 
@@ -807,6 +822,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void clientTick(MinecraftClient client) {
+        this.initSounds();
+
         if (this.isHallucination() || this.isDead() || client.isPaused()) {
             return;
         }
@@ -839,7 +856,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return;
         }
 
-        this.movementTick();
+        this.movementTick(serverWorld);
 
         this.getStateManager().tick(serverWorld);
 
@@ -920,17 +937,116 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
-    public void movementTick() {
+    @Nullable
+    public static BlockPos getClosestBlockPosToTarget(ServerWorld serverWorld,Iterable<BlockPos> blockPosList,BlockPos target) {
+        double closestDistance = 0;
+        BlockPos closestBlockPos = null;
+
+        for (BlockPos blockPos : blockPosList) {
+            if (!serverWorld.getBlockState(blockPos).isAir()) {
+                continue;
+            }
+            double distance = target.getSquaredDistance(blockPos);
+
+            if (closestDistance == 0.0) {
+                closestDistance = distance;
+            }
+
+            if (closestDistance > distance) {
+                closestDistance = distance;
+                closestBlockPos = blockPos;
+            }
+        }
+
+        return closestBlockPos;
+    }
+
+    public static int getClimbableHeight(ServerWorld serverWorld,BlockPos blockPos) {
+        if (serverWorld.getBlockState(blockPos).isAir()) {
+            return 1;
+        }
+
+        int climbableHeight = 0;
+        BlockPos currentPosition = blockPos.up();
+        BlockState currentBlockState = serverWorld.getBlockState(currentPosition);
+
+        while (!currentBlockState.isAir()) {
+            climbableHeight++;
+            if (climbableHeight > serverWorld.getTopY()) {
+                break;
+            }
+            currentPosition = currentPosition.up();
+        }
+
+        return climbableHeight;
+    }
+
+    @Nullable
+    public static BlockPos getFirstValidClimbableBlockPos(ServerWorld serverWorld,BlockPos climbBlockPos,int height) {
+        for (BlockPos blockPos : BlockPos.iterateOutwards(climbBlockPos,1,0,1)) {
+            BlockState blockState = serverWorld.getBlockState(blockPos);
+            if (!blockState.isAir()) {
+                continue;
+            }
+
+            BlockHitResult result = serverWorld.raycast(new BlockStateRaycastContext(blockPos.toCenterPos(), blockPos.up(height).toCenterPos(),BlockStatePredicate.ANY));
+
+            if (result.getType() == HitResult.Type.MISS) {
+                return blockPos;
+            }
+        }
+
+        return null;
+    }
+
+    public void climbMovementTick(ServerWorld serverWorld) {
+        boolean areBlocksAround = Util.areBlocksAround(serverWorld,this.getBlockPos().up(),1,0,1);
+
+        this.setClimbing(areBlocksAround && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY());
+
+        if (!this.climbing() || this.getTarget() == null) {
+            return;
+        }
+
+        this.setVelocity(0,MAN_CLIMB_SPEED,0);
+
+        if (this.climbPosition != Vec3d.ZERO) {
+            this.setPosition(this.climbPosition.getX(),this.climbPosition.getY(),this.climbPosition.getZ());
+        }
+
+        BlockPos blockPos = getClosestBlockPosToTarget(serverWorld,BlockPos.iterateOutwards(this.getBlockPos().up(),1,0,1),this.getTarget().getBlockPos());
+
+        if (blockPos == null) {
+            return;
+        }
+
+        int climbableHeight = getClimbableHeight(serverWorld,blockPos);
+
+        BlockPos climbableBlockPos = getFirstValidClimbableBlockPos(serverWorld,blockPos,climbableHeight);
+
+        if (climbableBlockPos == null) {
+            return;
+        }
+
+        climbableBlockPos = climbableBlockPos.up();
+
+        Vec3d climbablePos = climbableBlockPos.toCenterPos();
+
+        this.teleport(climbablePos.getX(),this.getPos().getY(),climbablePos.getZ());
+    }
+
+    public void movementTick(ServerWorld serverWorld) {
+
         // If the target is higher than us, and it's more than 2 block tall, then we climb, otherwise, we don't do anything and let the
         // pathfinding deal with moving and jumping
-        this.setClimbing(this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY() && Math.abs(this.getTarget().getBlockY() - this.getBlockY()) > 1);
+        this.climbMovementTick(serverWorld);
 
         if (this.isSubmergedInWater()) {
             Vec3d oldVelocity = this.getVelocity();
             this.setVelocity(oldVelocity.getX(),0.5,oldVelocity.getZ());
         }
 
-        if (this.isClimbing() && this.getTarget() != null) {
+        /*if (this.climbing() && this.getTarget() != null) {
 
             if (this.isOnGround()) {
                 this.jump();
@@ -938,7 +1054,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
             Vec3d toPlayer = this.getTarget().getPos().subtract(this.getPos()).normalize().multiply(0.2);
             setVelocity(new Vec3d(toPlayer.getX(),1,toPlayer.getZ()).multiply(MAN_CLIMB_SPEED));
-        }
+        }*/
     }
 
     /* Other */

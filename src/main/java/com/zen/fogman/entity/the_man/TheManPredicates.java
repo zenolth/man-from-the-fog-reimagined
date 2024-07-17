@@ -33,4 +33,6 @@ public class TheManPredicates {
 
     public static final Predicate<Entity> VALID_MAN_HALLUCINATION = entity ->
             entity instanceof TheManEntity theMan && theMan.isHallucination() && theMan.isAlive();
+
+    public static final Predicate<BlockState> EXCEPT_AIR = blockState -> !blockState.isAir();
 }

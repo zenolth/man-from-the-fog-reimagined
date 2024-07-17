@@ -15,9 +15,11 @@ Installation of this mod is as simple as dropping it into your client/server mod
 
 ## Compatibility :
 This mod should be compatible with every mod.
-- Maybe compatible with [The Man From The Fog - Fabric](https://modrinth.com/mod/the-man-from-the-fog-fabric), but they may attack each other.
 
-## Warning : This mod is not finished and is still in it's alpha stage, it may have some bugs so if you find some, open a GitHub issue
+## Credits : 
+See [CREDITS.md](./CREDITS.md)
+
+## Warning : This mod is not finished and is still in it's beta stage, it may have some bugs so if you find some, open a GitHub issue
 
 ## Donations
 If you want to leave a tip for my work, you can do so by [buying me a coffee](https://ko-fi.com/zenold), it's not mandatory and doesn't give any benefits, it's just a good little gesture :)

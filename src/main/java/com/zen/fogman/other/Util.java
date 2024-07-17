@@ -1,6 +1,8 @@
 package com.zen.fogman.other;
 
 import net.minecraft.client.render.Camera;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
@@ -23,20 +25,6 @@ public class Util {
         return (int) (secs * 20);
     }
 
-    public static double angleBetween(double x1,double y1,double x2,double y2) {
-        return Math.atan2(y1 - y2,x1 - x2);
-    }
-    public static double angleBetween(Vec3d a,Vec3d b) {
-        a = a.normalize();
-        b = b.normalize();
-        double dot = a.dotProduct(b);
-        return Math.acos(dot);
-    }
-
-    public static int toGoalTicks(int serverTicks) {
-        return MathHelper.ceilDiv(serverTicks, 2);
-    }
-
     public static Vec3d getRotationVector(float pitch, float yaw) {
         float f = pitch * (float) (Math.PI / 180.0);
         float g = -yaw * (float) (Math.PI / 180.0);
@@ -45,5 +33,20 @@ public class Util {
         float j = MathHelper.cos(f);
         float k = MathHelper.sin(f);
         return new Vec3d(i * j, -k, h * j);
+    }
+
+    public static double get2dDistance(Vec3d a,Vec3d b) {
+        a = new Vec3d(a.getX(),0,a.getZ());
+        b = new Vec3d(b.getX(),0,b.getZ());
+        return a.distanceTo(b);
+    }
+
+    public static boolean areBlocksAround(ServerWorld serverWorld, BlockPos pos, int rangeX, int rangeY, int rangeZ) {
+        for (BlockPos blockPos : BlockPos.iterateOutwards(pos,rangeX,rangeY,rangeZ)) {
+            if (!serverWorld.getBlockState(blockPos).isAir()) {
+                return true;
+            }
+        }
+        return false;
     }
 }

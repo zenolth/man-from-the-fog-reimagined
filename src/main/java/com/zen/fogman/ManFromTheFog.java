@@ -18,10 +18,10 @@ public class ManFromTheFog implements ModInitializer {
 	public static final String MOD_ID = "the_fog_is_coming";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-	public static final ModWorldEvents worldEvents = new ModWorldEvents();
-
 	@Override
 	public void onInitialize() {
+		ModWorldEvents worldEvents = new ModWorldEvents();
+
 		LOGGER.info("Initializing %s".formatted(MOD_ID));
 
 		ModGamerules.registerGamerules();
