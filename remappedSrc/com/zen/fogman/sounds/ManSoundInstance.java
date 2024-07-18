@@ -1,4 +1,4 @@
-package com.zen.fogman.sounds;
+package com.zen.fogman.common.sounds;
 
 import net.minecraft.client.sound.EntityTrackingSoundInstance;
 import net.minecraft.entity.Entity;

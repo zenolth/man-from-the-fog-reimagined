@@ -1,7 +1,7 @@
 package com.zen.fogman;
 
 import com.zen.fogman.client.ManClientTick;
-import com.zen.fogman.entity.ModRenderers;
+import com.zen.fogman.common.entity.ModRenderers;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;

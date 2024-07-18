@@ -1,4 +1,4 @@
-package com.zen.fogman.other;
+package com.zen.fogman.common.other;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;

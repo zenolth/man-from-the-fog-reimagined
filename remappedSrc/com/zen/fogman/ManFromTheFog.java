@@ -1,10 +1,10 @@
 package com.zen.fogman;
 
-import com.zen.fogman.entity.ModEntities;
-import com.zen.fogman.gamerules.ModGamerules;
-import com.zen.fogman.item.ModItems;
-import com.zen.fogman.server.ManWorldEvents;
-import com.zen.fogman.sounds.ModSounds;
+import com.zen.fogman.common.entity.ModEntities;
+import com.zen.fogman.common.gamerules.ModGamerules;
+import com.zen.fogman.common.item.ModItems;
+import com.zen.fogman.common.server.ManWorldEvents;
+import com.zen.fogman.common.sounds.ModSounds;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;

@@ -1,7 +1,7 @@
 package com.zen.fogman.client;
 
-import com.zen.fogman.entity.ModEntities;
-import com.zen.fogman.entity.the_man.TheManEntity;
+import com.zen.fogman.common.entity.ModEntities;
+import com.zen.fogman.common.entity.the_man.TheManEntity;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.predicate.entity.EntityPredicates;

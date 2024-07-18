@@ -1,4 +1,4 @@
-package com.zen.fogman.sounds;
+package com.zen.fogman.common.sounds;
 
 import com.zen.fogman.ManFromTheFog;
 import net.minecraft.registry.Registries;

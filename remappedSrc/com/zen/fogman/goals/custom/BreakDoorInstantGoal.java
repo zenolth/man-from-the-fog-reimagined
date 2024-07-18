@@ -1,4 +1,4 @@
-package com.zen.fogman.goals.custom;
+package com.zen.fogman.common.goals.custom;
 
 import net.minecraft.block.*;
 import net.minecraft.entity.ai.NavigationConditions;

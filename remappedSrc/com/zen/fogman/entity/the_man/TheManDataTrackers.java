@@ -1,4 +1,4 @@
-package com.zen.fogman.entity.the_man;
+package com.zen.fogman.common.entity.the_man;
 
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;

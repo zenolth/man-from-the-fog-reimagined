@@ -1,3 +1,2 @@
-- Changed how "looking at me" check is calculated again
-  - Now it works even better and it also takes the hitbox/bounding box into account
-- Added some more splash texts
+- Fixed problems with dedicated servers not being able to load the mod
+- Reorganized the code base a little bit

@@ -1,4 +1,4 @@
-package com.zen.fogman.gamerules;
+package com.zen.fogman.common.gamerules;
 
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;

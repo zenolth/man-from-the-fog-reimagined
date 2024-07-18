@@ -1,8 +1,8 @@
-package com.zen.fogman.entity;
+package com.zen.fogman.common.entity;
 
 import com.zen.fogman.ManFromTheFog;
-import com.zen.fogman.entity.the_man.TheManEntity;
-import com.zen.fogman.entity.the_man.TheManEntityHallucination;
+import com.zen.fogman.common.entity.the_man.TheManEntity;
+import com.zen.fogman.common.entity.the_man.TheManEntityHallucination;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.entity.EntityDimensions;

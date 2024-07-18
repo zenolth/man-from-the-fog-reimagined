@@ -1,4 +1,4 @@
-package com.zen.fogman.entity.the_man;
+package com.zen.fogman.common.entity.the_man;
 
 import com.zen.fogman.ManFromTheFog;
 import net.minecraft.client.render.entity.EntityRendererFactory;

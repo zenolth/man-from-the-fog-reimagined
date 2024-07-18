@@ -1,6 +1,6 @@
-package com.zen.fogman.entity.the_man.states;
+package com.zen.fogman.common.entity.the_man.states;
 
-import com.zen.fogman.entity.the_man.TheManEntity;
+import com.zen.fogman.common.entity.the_man.TheManEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.world.ServerWorld;
 

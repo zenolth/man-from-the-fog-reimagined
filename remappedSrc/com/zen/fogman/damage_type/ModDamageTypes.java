@@ -1,4 +1,4 @@
-package com.zen.fogman.damage_type;
+package com.zen.fogman.common.damage_type;
 
 import com.zen.fogman.ManFromTheFog;
 import net.minecraft.entity.damage.DamageSource;

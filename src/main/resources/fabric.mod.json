@@ -17,10 +17,10 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.zen.fogman.ManFromTheFog"
+          "com.zen.fogman.common.ManFromTheFog"
 		],
 		"client": [
-			"com.zen.fogman.ManFromTheFogClient"
+			"com.zen.fogman.client.ManFromTheFogClient"
 		],
 		"fabric-datagen": [
 			"com.zen.fogman.ManFromTheFogDataGenerator"
