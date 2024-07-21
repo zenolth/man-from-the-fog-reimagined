@@ -1,5 +1,7 @@
 package com.zen.fogman.common.other;
 
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.render.Camera;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -43,7 +45,19 @@ public class Util {
 
     public static boolean areBlocksAround(ServerWorld serverWorld, BlockPos pos, int rangeX, int rangeY, int rangeZ) {
         for (BlockPos blockPos : BlockPos.iterateOutwards(pos,rangeX,rangeY,rangeZ)) {
-            if (!serverWorld.getBlockState(blockPos).isAir()) {
+            BlockState blockState = serverWorld.getBlockState(blockPos);
+            if (!blockState.isAir() && blockState.isFullCube(serverWorld,blockPos)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean areBlocksAround(ServerWorld serverWorld, BlockPos pos, int rangeY) {
+        for (int y = 1 ; y <= rangeY ; y++) {
+            BlockPos blockPos = pos.up(y);
+            BlockState blockState = serverWorld.getBlockState(blockPos);
+            if (!blockState.isAir() && blockState.isFullCube(serverWorld,blockPos)) {
                 return true;
             }
         }

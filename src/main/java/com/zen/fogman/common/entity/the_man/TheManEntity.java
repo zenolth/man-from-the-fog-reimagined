@@ -2,16 +2,14 @@ package com.zen.fogman.common.entity.the_man;
 
 import com.zen.fogman.common.entity.ModEntities;
 import com.zen.fogman.common.entity.the_man.states.*;
+import com.zen.fogman.common.gamerules.ModGamerules;
 import com.zen.fogman.common.item.ModItems;
 import com.zen.fogman.common.other.Util;
 import com.zen.fogman.common.sounds.ModSounds;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.block.*;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.*;
 import net.minecraft.entity.ai.pathing.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -680,6 +678,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 continue;
             }
 
+            if (!serverWorld.getGameRules().getBoolean(ModGamerules.MAN_SHOULD_BREAK_GLASS)) {
+                continue;
+            }
+
             if (block instanceof AbstractGlassBlock || block instanceof PaneBlock || blockState.getLuminance() >= 12) {
                 serverWorld.breakBlock(blockPos, true);
                 serverWorld.playSoundAtBlockCenter(
@@ -836,7 +838,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         BlockPos closestBlockPos = null;
 
         for (BlockPos blockPos : blockPosList) {
-            if (!serverWorld.getBlockState(blockPos).isAir()) {
+            BlockState blockState = serverWorld.getBlockState(blockPos);
+            if (blockState.isAir()) {
                 continue;
             }
             double distance = target.getSquaredDistance(blockPos);
@@ -882,7 +885,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 continue;
             }
 
-            BlockHitResult result = serverWorld.raycast(new BlockStateRaycastContext(blockPos.toCenterPos(), blockPos.up(height).toCenterPos(),BlockStatePredicate.ANY));
+            Vec3d origin = blockPos.toCenterPos();
+            Vec3d target = blockPos.up(height).toCenterPos();
+
+            BlockHitResult result = serverWorld.raycast(new BlockStateRaycastContext(origin,target,BlockStatePredicate.ANY));
 
             if (result.getType() == HitResult.Type.MISS) {
                 return blockPos;
@@ -893,7 +899,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void climbMovementTick(ServerWorld serverWorld) {
-        boolean areBlocksAround = Util.areBlocksAround(serverWorld,this.getBlockPos().up(),1,0,1);
+        boolean areBlocksAround = Util.areBlocksAround(serverWorld,this.getBlockPos().up(),1,0,1) && Util.areBlocksAround(serverWorld,this.getBlockPos().up(2),1,0,1);
 
         this.setClimbing(areBlocksAround && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY());
 
@@ -903,29 +909,29 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         this.setVelocity(0,MAN_CLIMB_SPEED,0);
 
-        if (this.climbPosition != Vec3d.ZERO) {
-            this.setPosition(this.climbPosition.getX(),this.climbPosition.getY(),this.climbPosition.getZ());
-        }
-
-        BlockPos blockPos = getClosestBlockPosToTarget(serverWorld,BlockPos.iterateOutwards(this.getBlockPos().up(),1,0,1),this.getTarget().getBlockPos());
+        BlockPos blockPos = getClosestBlockPosToTarget(serverWorld,BlockPos.iterateOutwards(this.getBlockPos(),1,0,1),this.getTarget().getBlockPos());
 
         if (blockPos == null) {
             return;
         }
 
+        this.getLookControl().lookAt(blockPos.getX(),blockPos.getY(),blockPos.getZ());
+
         int climbableHeight = getClimbableHeight(serverWorld,blockPos);
 
-        BlockPos climbableBlockPos = getFirstValidClimbableBlockPos(serverWorld,blockPos,climbableHeight);
+        if (climbableHeight <= 2) {
+            climbableHeight = Math.abs(this.getTarget().getBlockY() - this.getBlockY());
+        }
+
+        BlockPos climbableBlockPos = getFirstValidClimbableBlockPos(serverWorld,blockPos.up(),climbableHeight);
 
         if (climbableBlockPos == null) {
             return;
         }
 
-        climbableBlockPos = climbableBlockPos.up();
-
         Vec3d climbablePos = climbableBlockPos.toCenterPos();
 
-        this.teleport(climbablePos.getX(),this.getPos().getY(),climbablePos.getZ());
+        this.updatePosition(climbablePos.getX(),this.getY(),climbablePos.getZ());
     }
 
     public void movementTick(ServerWorld serverWorld) {

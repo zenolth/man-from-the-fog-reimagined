@@ -68,7 +68,14 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
      * @return The generated position
      */
     public static Vec3d getRandomSpawnBehindDirection(ServerWorld serverWorld, Random random, Vec3d origin, Vec3d direction) {
-        return getRandomSpawnBehindDirection(serverWorld,random,origin,direction,20,60);
+        return getRandomSpawnBehindDirection(
+                serverWorld,
+                random,
+                origin,
+                direction,
+                serverWorld.getGameRules().getInt(ModGamerules.MAN_MIN_SPAWN_RANGE),
+                serverWorld.getGameRules().getInt(ModGamerules.MAN_MAX_SPAWN_RANGE)
+        );
     }
 
     public static void playCreepySound(ServerWorld serverWorld,double x, double y, double z) {

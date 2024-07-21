@@ -8,7 +8,7 @@ import net.minecraft.server.world.ServerWorld;
 
 public class StareState extends AbstractState {
 
-    public static final double STARE_COOLDOWN = 4;
+    public static final double STARE_COOLDOWN = 8;
 
     private long stareCooldown = Util.secToTick(STARE_COOLDOWN);
 
@@ -29,8 +29,8 @@ public class StareState extends AbstractState {
         this.mob.getLookControl().lookAt(target, 30f, 30f);
 
         if (this.mob.isLookedAt()) {
-            if (--this.stareCooldown == 0L) {
-                switch (this.mob.getRandom().nextBetween(0,3)) {
+            if (--this.stareCooldown <= 0L) {
+                switch (this.mob.getRandom().nextBetween(0,2)) {
                     case 0:
                         this.mob.despawn();
                         break;

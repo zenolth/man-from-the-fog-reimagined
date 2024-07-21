@@ -12,6 +12,10 @@ public class ModGamerules {
     public static final GameRules.Key<DoubleRule> MAN_AMBIENT_SOUND_CHANCE = createRule("manAmbientSoundChance", GameRules.Category.SPAWNING, 0.55, 0, 1);
     public static final GameRules.Key<DoubleRule> MAN_SPAWN_INTERVAL = createRule("manSpawnInterval", GameRules.Category.SPAWNING, 10.0, 5.0, 60.0);
 
+    public static final GameRules.Key<GameRules.IntRule> MAN_MIN_SPAWN_RANGE = createRule("manMinSpawnRange", GameRules.Category.SPAWNING,20,20,120);
+    public static final GameRules.Key<GameRules.IntRule> MAN_MAX_SPAWN_RANGE = createRule("manMaxSpawnRange", GameRules.Category.SPAWNING,60,20,120);
+
+    public static final GameRules.Key<GameRules.BooleanRule> MAN_SHOULD_BREAK_GLASS = createRule("manShouldBreakGlass", GameRules.Category.MOBS, false);
     //  HELPER FUNCTIONS
     // Double rules
     public static GameRules.Key<DoubleRule> createRule(String name,GameRules.Category category,double value) {

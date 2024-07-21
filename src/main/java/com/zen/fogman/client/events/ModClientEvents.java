@@ -27,6 +27,7 @@ import java.util.List;
 @Environment(EnvType.CLIENT)
 public class ModClientEvents implements ClientTickEvents.EndTick {
 
+    public static int DAY_TICK = 10;
     public static int NIGHT_TICK = 13000;
 
     public PositionedSoundInstance chaseTheme;
@@ -93,7 +94,7 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
             return;
         }
 
-        if (client.world.getTimeOfDay() >= NIGHT_TICK && !soundManager.isPlaying(this.nightAmbience)) {
+        if (client.world.getTimeOfDay() >= DAY_TICK && client.world.getTimeOfDay() <= NIGHT_TICK && !soundManager.isPlaying(this.nightAmbience)) {
             soundManager.play(this.nightAmbience);
         }
 

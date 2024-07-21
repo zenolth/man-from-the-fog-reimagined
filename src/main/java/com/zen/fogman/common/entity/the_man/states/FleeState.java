@@ -20,6 +20,8 @@ public class FleeState extends AbstractState {
             return;
         }
 
+        this.mob.chaseIfTooClose();
+
         this.mob.getLookControl().lookAt(target,30f,30f);
 
         Vec3d direction = new Vec3d(this.mob.getLookControl().getLookX() - this.mob.getX(),0,this.mob.getLookControl().getLookZ() - this.mob.getZ())
@@ -27,7 +29,7 @@ public class FleeState extends AbstractState {
                 .rotateY((float) Math.toRadians(90))
                 .multiply(100);
 
-        this.mob.getMoveControl().moveTo(this.mob.getX() + direction.getX(),this.mob.getY() + direction.getY(),this.mob.getZ() + direction.getZ(), 1.4);
+        this.mob.moveTo(this.mob.getX() + direction.getX(),this.mob.getY() + direction.getY(),this.mob.getZ() + direction.getZ(), 1.4);
 
         if (!this.mob.isLookedAt()) {
             this.mob.discard();

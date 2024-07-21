@@ -18,6 +18,6 @@ TheManEntity theManEntity = new TheManEntity();
 Hi Space!
 D-BOIS!
 Using GeckoLib!
-Nightfall rocks!
-Also try "A Gracewind Tale : The Goatman" on Roblox!
+Nightfall? What's that?
+Also try "A Gracewind Tale" on Roblox!
 RVVZ pls update TRR
