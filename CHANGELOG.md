@@ -1,2 +1,3 @@
 - Fixed The Man not spawning, at all (really weird bug)
 - The Man will now break leaves above his head if he's climbing
+- Renamed manSpawnInterval gamerule to manSpawnCooldown
