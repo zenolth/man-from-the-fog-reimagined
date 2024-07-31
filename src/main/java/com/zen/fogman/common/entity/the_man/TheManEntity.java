@@ -1,14 +1,19 @@
 package com.zen.fogman.common.entity.the_man;
 
+import com.zen.fogman.common.damage_type.ModDamageTypes;
 import com.zen.fogman.common.entity.ModEntities;
 import com.zen.fogman.common.entity.the_man.states.*;
 import com.zen.fogman.common.gamerules.ModGamerules;
 import com.zen.fogman.common.item.ModItems;
 import com.zen.fogman.common.other.Util;
 import com.zen.fogman.common.sounds.ModSounds;
+import com.zen.fogman.common.world.dimension.ModDimensions;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.block.*;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.pathing.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
@@ -19,6 +24,7 @@ import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -34,6 +40,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.*;
 import org.jetbrains.annotations.Nullable;
@@ -46,6 +53,7 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.Arrays;
+import java.util.HashMap;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
     public static final double MAN_SPEED = 0.48;
@@ -107,6 +115,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     // Velocities
     private Vec3d climbPosition = Vec3d.ZERO;
+
+    // Maps
+    public HashMap<String,Boolean> playersLookingMap = new HashMap<>();
 
     public TheManEntity(EntityType<? extends TheManEntity> entityType, World world) {
         super(entityType,world);
@@ -184,7 +195,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     /* Attributes */
     public static DefaultAttributeContainer.Builder createManAttributes() {
         return TheManEntity.createHostileAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH,350)
+                .add(EntityAttributes.GENERIC_MAX_HEALTH,400)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED,MAN_SPEED)
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE,7)
                 .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK,4)
@@ -239,19 +250,34 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return false;
     }
 
-    public void setLookedAt(boolean lookedAt) {
-        if (this.getWorld().isClient()) {
-            PacketByteBuf packet = PacketByteBufs.create();
-            packet.writeInt(this.getId());
-            packet.writeBoolean(lookedAt);
-            ClientPlayNetworking.send(TheManPackets.LOOKED_AT_PACKET_ID,packet);
-        } else {
-            this.lookedAt = lookedAt;
+    @Environment(EnvType.CLIENT)
+    public void updatePlayerLookedAt(String uuid, boolean lookedAt) {
+        PacketByteBuf packet = PacketByteBufs.create();
+        packet.writeInt(this.getId());
+        packet.writeString(uuid);
+        packet.writeBoolean(lookedAt);
+        ClientPlayNetworking.send(TheManPackets.LOOKED_AT_PACKET_ID,packet);
+    }
+
+    public void updatePlayerMap(String uuid, boolean value) {
+        this.playersLookingMap.put(uuid,value);
+    }
+
+    public void removePlayerFromMap(String uuid) {
+        if (!this.playersLookingMap.containsKey(uuid)) {
+            return;
         }
+        this.playersLookingMap.remove(uuid);
     }
 
     public boolean isLookedAt() {
-        return this.lookedAt;
+        for (boolean looking : this.playersLookingMap.values()) {
+            if (looking) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void setLunging(boolean lunging) {
@@ -436,14 +462,18 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 (getWorld().isDay() && effect.getEffectType() != StatusEffects.REGENERATION);
     }
 
-    @Override
-    public boolean canSpawn(WorldView world) {
-        return !(TheManUtils.manExists(this.getServerWorld()) || TheManUtils.hallucinationsExists(this.getServerWorld()));
+    public static boolean canManSpawn(ServerWorld serverWorld) {
+        return !(TheManUtils.manExists(serverWorld) || TheManUtils.hallucinationsExists(serverWorld)) &&
+                isInAllowedDimension(serverWorld);
+    }
+
+    public static boolean isInAllowedDimension(World world) {
+        return world.getRegistryKey() == World.OVERWORLD || world.getRegistryKey() == ModDimensions.ENSHROUDED_LEVEL_KEY;
     }
 
     @Override
     public boolean canSpawn(WorldAccess world, SpawnReason spawnReason) {
-        return this.canSpawn(world);
+        return canManSpawn(this.getServerWorld());
     }
 
     @Override
@@ -514,6 +544,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return;
         }
         this.addStatusEffect(TheManStatusEffects.REGENERATION);
+        this.addStatusEffect(TheManStatusEffects.DOLPHINS_GRACE);
     }
 
     public void despawn() {
@@ -633,12 +664,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
             Block block = blockState.getBlock();
 
-            if (blockPos.getX() == this.getBlockX() && blockPos.getZ() == this.getBlockZ() && this.getBlockPos().getY() < blockPos.getY()) {
-                if (block.getHardness() <= 2.0 && block.getHardness() >= 0.5) {
-                    serverWorld.breakBlock(blockPos, true);
-                }
-            }
-
             if (block instanceof TrapdoorBlock && blockState.contains(TrapdoorBlock.OPEN)) {
                 if (blockPos.getY() > this.getBlockY()) {
                     if (!blockState.get(TrapdoorBlock.OPEN)) {
@@ -665,35 +690,72 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 continue;
             }
 
-            if (block instanceof TorchBlock && !blockState.emitsRedstonePower()) {
-                serverWorld.breakBlock(blockPos, true);
-                serverWorld.playSoundAtBlockCenter(
-                        blockPos,
-                        SoundEvents.BLOCK_WOOD_BREAK,
-                        SoundCategory.BLOCKS,
-                        this.getSoundVolume(),
-                        1.0f,
-                        true
-                );
-                continue;
-            }
+            if (!blockState.emitsRedstonePower()) {
+                if (block instanceof TorchBlock) {
+                    serverWorld.breakBlock(blockPos, true);
+                    serverWorld.playSoundAtBlockCenter(
+                            blockPos,
+                            SoundEvents.BLOCK_WOOD_BREAK,
+                            SoundCategory.BLOCKS,
+                            this.getSoundVolume(),
+                            1.0f,
+                            true
+                    );
+                }
 
-            if (!serverWorld.getGameRules().getBoolean(ModGamerules.MAN_SHOULD_BREAK_GLASS)) {
-                continue;
-            }
+                if (!serverWorld.getGameRules().getBoolean(ModGamerules.MAN_SHOULD_BREAK_GLASS)) {
+                    continue;
+                }
 
-            if (block instanceof AbstractGlassBlock || block instanceof PaneBlock || blockState.getLuminance() >= 12) {
-                serverWorld.breakBlock(blockPos, true);
-                serverWorld.playSoundAtBlockCenter(
-                        blockPos,
-                        block.getSoundGroup(blockState).getBreakSound(),
-                        SoundCategory.BLOCKS,
-                        this.getSoundVolume(),
-                        1.0f,
-                        true
-                );
+                if (block instanceof AbstractGlassBlock || block instanceof PaneBlock || blockState.getLuminance() >= 12) {
+                    serverWorld.breakBlock(blockPos, true);
+                    serverWorld.playSoundAtBlockCenter(
+                            blockPos,
+                            block.getSoundGroup(blockState).getBreakSound(),
+                            SoundCategory.BLOCKS,
+                            this.getSoundVolume(),
+                            1.0f,
+                            true
+                    );
+                }
             }
         }
+    }
+
+    public boolean tryAttackTarget(Entity target) {
+        float attackDamage = (float)this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
+        float attackKnockback = (float)this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_KNOCKBACK);
+        if (target instanceof LivingEntity) {
+            attackDamage += EnchantmentHelper.getAttackDamage(this.getMainHandStack(), ((LivingEntity)target).getGroup());
+            attackKnockback += (float)EnchantmentHelper.getKnockback(this);
+        }
+
+        int fireAspectLevel = EnchantmentHelper.getFireAspect(this);
+        if (fireAspectLevel > 0) {
+            target.setOnFireFor(fireAspectLevel * 4);
+        }
+
+        boolean damaged = target.damage(this.getDamageSources().create(ModDamageTypes.MAN_ATTACK_DAMAGE_TYPE,this), attackDamage);
+        if (damaged) {
+            if (attackKnockback > 0.0F && target instanceof LivingEntity) {
+                ((LivingEntity)target)
+                        .takeKnockback(
+                                attackKnockback * 0.5F,
+                                MathHelper.sin(this.getYaw() * (float) (Math.PI / 180.0)),
+                                -MathHelper.cos(this.getYaw() * (float) (Math.PI / 180.0))
+                        );
+                this.setVelocity(this.getVelocity().multiply(0.6, 1.0, 0.6));
+            }
+
+            if (target instanceof PlayerEntity playerEntity) {
+                playerEntity.disableShield(playerEntity.isSprinting());
+            }
+
+            this.applyDamageEffects(this, target);
+            this.onAttacking(target);
+        }
+
+        return damaged;
     }
 
     @Override
@@ -711,7 +773,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return true;
         }
 
-        return super.tryAttack(target);
+        return this.tryAttackTarget(target);
     }
 
     public void attack(LivingEntity target) {
@@ -938,22 +1000,22 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         // If the target is higher than us, and it's more than 2 block tall, then we climb, otherwise, we don't do anything and let the
         // pathfinding deal with moving and jumping
-        this.climbMovementTick(serverWorld);
+        //this.climbMovementTick(serverWorld);
 
-        if (this.isSubmergedInWater()) {
+        if (this.isSubmergedInWater() && (this.getTarget() == null || this.getTarget().getBlockY() >= this.getBlockY())) {
             Vec3d oldVelocity = this.getVelocity();
-            this.setVelocity(oldVelocity.getX(),0.5,oldVelocity.getZ());
+            this.setVelocity(oldVelocity.getX() * 5,0.5,oldVelocity.getZ() * 5);
         }
 
-        /*if (this.climbing() && this.getTarget() != null) {
+        if (this.climbing() && this.getTarget() != null) {
 
             if (this.isOnGround()) {
                 this.jump();
             }
 
             Vec3d toPlayer = this.getTarget().getPos().subtract(this.getPos()).normalize().multiply(0.2);
-            setVelocity(new Vec3d(toPlayer.getX(),1,toPlayer.getZ()).multiply(MAN_CLIMB_SPEED));
-        }*/
+            this.setVelocity(new Vec3d(toPlayer.getX(),1,toPlayer.getZ()).multiply(MAN_CLIMB_SPEED));
+        }
     }
 
     /* Other */

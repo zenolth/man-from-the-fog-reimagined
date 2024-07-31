@@ -9,9 +9,9 @@ import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 
 public class ModDamageTypes {
-    public static final RegistryKey<DamageType> GENERIC_ATTACK_PIERCE = RegistryKey.of(RegistryKeys.DAMAGE_TYPE, new Identifier(ManFromTheFog.MOD_ID, "generic_piercing"));
+    public static final RegistryKey<DamageType> MAN_ATTACK_DAMAGE_TYPE = RegistryKey.of(RegistryKeys.DAMAGE_TYPE, new Identifier(ManFromTheFog.MOD_ID, "man_attack_damage_type"));
 
-    public static DamageSource of(World world, RegistryKey<DamageType> key) {
-        return new DamageSource(world.getRegistryManager().get(RegistryKeys.DAMAGE_TYPE).entryOf(key));
+    public static void register() {
+
     }
 }

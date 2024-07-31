@@ -8,7 +8,7 @@ import net.minecraft.server.world.ServerWorld;
 
 public class StareState extends AbstractState {
 
-    public static final double STARE_COOLDOWN = 8;
+    public static final double STARE_COOLDOWN = 4;
 
     private long stareCooldown = Util.secToTick(STARE_COOLDOWN);
 

@@ -2,17 +2,19 @@ package com.zen.fogman.common.server;
 
 import com.zen.fogman.common.entity.ModEntities;
 import com.zen.fogman.common.entity.the_man.TheManEntity;
+import com.zen.fogman.common.entity.the_man.TheManPredicates;
 import com.zen.fogman.common.entity.the_man.TheManUtils;
 import com.zen.fogman.common.gamerules.ModGamerules;
 import com.zen.fogman.common.other.Util;
 import com.zen.fogman.common.sounds.ModSounds;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
+import com.zen.fogman.common.world.dimension.ModDimensions;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -26,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Random;
 
-public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvents.Load, ServerTickEvents.EndWorldTick {
+public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvents.Load, ServerTickEvents.EndWorldTick, ServerPlayConnectionEvents.Disconnect {
 
     public static final float MAN_CREEPY_VOLUME = 5f;
 
@@ -36,7 +38,7 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
 
     @Nullable
     public static ServerPlayerEntity getRandomAlivePlayer(ServerWorld serverWorld,Random random) {
-        List<ServerPlayerEntity> list = serverWorld.getPlayers(entity -> entity.isAlive() && entity.getWorld().getRegistryKey() == World.OVERWORLD && !entity.isSpectator() && !entity.isCreative());
+        List<ServerPlayerEntity> list = serverWorld.getPlayers(entity -> entity.isAlive() && !entity.isSpectator() && !entity.isCreative() && TheManEntity.isInAllowedDimension(entity.getServerWorld()));
         if (list.isEmpty()) {
             return null;
         }
@@ -54,7 +56,11 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
      */
     public static Vec3d getRandomSpawnBehindDirection(ServerWorld serverWorld, Random random, Vec3d origin, Vec3d direction, int minRange, int maxRange) {
         direction = direction.multiply(-1);
-        direction = direction.multiply(random.nextInt(minRange,maxRange));
+        if (minRange == maxRange) {
+            direction = direction.multiply(minRange);
+        } else {
+            direction = direction.multiply(maxRange > minRange ? random.nextInt(minRange,maxRange) : random.nextInt(maxRange,minRange));
+        }
         direction = direction.rotateY((float) Math.toRadians((random.nextFloat(-60,60))));
 
         return serverWorld.getTopPosition(Heightmap.Type.WORLD_SURFACE,BlockPos.ofFloored(origin.add(direction))).toCenterPos();
@@ -87,14 +93,15 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
         if (player == null) {
             return;
         }
-        Vec3d spawnPosition = getRandomSpawnBehindDirection(serverWorld,random,player.getPos(), Util.getRotationVector(0,player.getYaw(1.0f)));
-        TheManEntity man = new TheManEntity(ModEntities.THE_MAN,serverWorld);
-        if (man.canSpawn(serverWorld)) {
+        ServerWorld world = player.getServerWorld();
+        Vec3d spawnPosition = getRandomSpawnBehindDirection(world,random,player.getPos(), Util.getRotationVector(0,player.getYaw(1.0f)));
+        TheManEntity man = new TheManEntity(ModEntities.THE_MAN,world);
+        if (man.canSpawn(world)) {
             man.setPosition(spawnPosition);
             man.setTarget(player);
-            serverWorld.spawnEntity(man);
+            world.spawnEntity(man);
             if (!man.isSilent()) {
-                playCreepySound(serverWorld,spawnPosition.getX(),spawnPosition.getY(),spawnPosition.getZ());
+                playCreepySound(world,spawnPosition.getX(),spawnPosition.getY(),spawnPosition.getZ());
             }
         } else {
             man.discard();
@@ -106,8 +113,9 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
         if (player == null) {
             return;
         }
-        Vec3d soundPosition = getRandomSpawnBehindDirection(serverWorld,random,player.getPos(), Util.getRotationVector(0,player.getYaw(1.0f)));
-        playCreepySound(serverWorld,soundPosition.getX(),soundPosition.getY(),soundPosition.getZ());
+        ServerWorld world = player.getServerWorld();
+        Vec3d soundPosition = getRandomSpawnBehindDirection(world,random,player.getPos(), Util.getRotationVector(0,player.getYaw(1.0f)));
+        playCreepySound(world,soundPosition.getX(),soundPosition.getY(),soundPosition.getZ());
     }
 
     @Override
@@ -131,9 +139,10 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
         if (serverWorld.isClient()) {
             return;
         }
-        if (serverWorld.isDay()) {
+        if (serverWorld.getAmbientDarkness() < 4) {
             return;
         }
+
         if (TheManUtils.manExists(serverWorld) || TheManUtils.hallucinationsExists(serverWorld)) {
             return;
         }
@@ -143,6 +152,10 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
         if (--spawnCooldown <= 0L) {
 
             int spawnChanceMul = gameRules.getBoolean(ModGamerules.MAN_SPAWN_CHANCE_SCALES) ? serverWorld.getPlayers().size() : 1;
+
+            if (serverWorld.getRegistryKey() == ModDimensions.ENSHROUDED_LEVEL_KEY) {
+                spawnChanceMul *= 2;
+            }
 
             if (Math.random() < gameRules.get(ModGamerules.MAN_SPAWN_CHANCE).get() * spawnChanceMul) {
                 if (Math.random() < gameRules.get(ModGamerules.MAN_AMBIENT_SOUND_CHANCE).get()) {
@@ -154,5 +167,17 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
 
             spawnCooldown = Util.secToTick(gameRules.get(ModGamerules.MAN_SPAWN_INTERVAL).get());
         }
+    }
+
+    @Override
+    public void onPlayDisconnect(ServerPlayNetworkHandler handler, MinecraftServer server) {
+        ServerPlayerEntity player = handler.getPlayer();
+        ServerWorld serverWorld = player.getServerWorld();
+
+        List<? extends TheManEntity> theManEntities = serverWorld.getEntitiesByType(ModEntities.THE_MAN, TheManPredicates.VALID_MAN);
+
+        theManEntities.forEach(theManEntity -> {
+            theManEntity.removePlayerFromMap(player.getUuidAsString());
+        });
     }
 }

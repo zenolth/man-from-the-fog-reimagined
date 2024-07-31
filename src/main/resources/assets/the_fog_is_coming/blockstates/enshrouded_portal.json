@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "the_fog_is_coming:block/enshrouded_portal_ns"
+    },
+    "axis=z": {
+      "model": "the_fog_is_coming:block/enshrouded_portal_ew"
+    }
+  }
+}

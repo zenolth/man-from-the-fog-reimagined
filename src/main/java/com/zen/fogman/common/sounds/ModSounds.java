@@ -30,7 +30,7 @@ public class ModSounds {
         return Registry.register(Registries.SOUND_EVENT,soundIdentifier,SoundEvent.of(soundIdentifier));
     }
 
-    public static void registerSounds() {
+    public static void register() {
         ManFromTheFog.LOGGER.info("Registering SoundEvents");
         ManFromTheFog.LOGGER.info("Registered SoundEvents");
     }

@@ -35,6 +35,14 @@ public class TheManStatusEffects {
             false,
             false
     );
+    public static final StatusEffectInstance DOLPHINS_GRACE = new StatusEffectInstance(
+            StatusEffects.DOLPHINS_GRACE,
+            StatusEffectInstance.INFINITE,
+            1,
+            false,
+            false
+    );
+
     public static final StatusEffectInstance GLOWING = new StatusEffectInstance(StatusEffects.GLOWING,50);
 
     public static final HashSet<StatusEffectInstance> EMPTY_STATUS_EFFECT_COLLECTION = new HashSet<>();

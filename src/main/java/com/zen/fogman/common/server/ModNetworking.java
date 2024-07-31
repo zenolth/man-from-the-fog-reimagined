@@ -9,15 +9,37 @@ public class ModNetworking {
 
     public static void registerReceivers() {
         ServerPlayNetworking.registerGlobalReceiver(TheManPackets.LOOKED_AT_PACKET_ID,(server, player, handler, buf, responseSender) -> {
-            Entity entity = server.getOverworld().getEntityById(buf.readInt());
+            int mobId = buf.readInt();
+            String uuid = buf.readString();
+            boolean lookedAt = buf.readBoolean();
+            Entity entity = player.getServerWorld().getEntityById(mobId);
 
-            if (entity == null) {
-                return;
-            }
+            server.execute(() -> {
+                if (entity == null) {
+                    return;
+                }
 
-            if (entity instanceof TheManEntity theMan) {
-                theMan.setLookedAt(buf.readBoolean());
-            }
+                if (entity instanceof TheManEntity theMan) {
+                    theMan.updatePlayerMap(uuid,lookedAt);
+                }
+            });
+        });
+
+        ServerPlayNetworking.registerGlobalReceiver(TheManPackets.REMOVE_PLAYER_FROM_MAP_PACKET_ID,(server, player, handler, buf, responseSender) -> {
+            int mobId = buf.readInt();
+            String uuid = buf.readString();
+
+            server.execute(() -> {
+                Entity entity = server.getOverworld().getEntityById(mobId);
+
+                if (entity == null) {
+                    return;
+                }
+
+                if (entity instanceof TheManEntity theMan) {
+                    theMan.playersLookingMap.remove(uuid);
+                }
+            });
         });
     }
 }

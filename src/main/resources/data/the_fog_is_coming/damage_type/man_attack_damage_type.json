@@ -1,5 +1,5 @@
 {
   "exhaustion": 0,
-  "message_id": "death.attack.mob",
+  "message_id": "mob_attack",
   "scaling": "never"
 }

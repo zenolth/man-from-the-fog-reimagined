@@ -48,7 +48,7 @@ public class ModGamerules {
         return GameRuleRegistry.register(name,category,GameRuleFactory.createBooleanRule(value));
     }
 
-    public static void registerGamerules() {
+    public static void register() {
 
     }
 }

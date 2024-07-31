@@ -1,6 +1,7 @@
 package com.zen.fogman.common.item;
 
 import com.zen.fogman.common.ManFromTheFog;
+import com.zen.fogman.common.block.ModBlocks;
 import com.zen.fogman.common.entity.ModEntities;
 import com.zen.fogman.common.item.custom.ClawsItem;
 import com.zen.fogman.common.item.custom.TearOfTheManItem;
@@ -26,7 +27,7 @@ public class ModItems {
     ));
 
     public static final Item TEAR_OF_THE_MAN = registerItem("tear_of_the_man",new TearOfTheManItem(
-            new FabricItemSettings().maxCount(1).rarity(Rarity.EPIC)
+            new FabricItemSettings().maxCount(1).rarity(Rarity.EPIC).fireproof()
     ));
 
     public static final Item THE_MAN_SPAWN_EGG = registerItem(
@@ -52,15 +53,22 @@ public class ModItems {
         entries.add(CLAWS);
     }
 
+    private static void addItemsToNaturalGroup(FabricItemGroupEntries entries) {
+        entries.add(ModBlocks.BLEEDING_OBSIDIAN.asItem());
+    }
+
     public static Item registerItem(String name, Item item) {
         return Registry.register(Registries.ITEM, new Identifier(ManFromTheFog.MOD_ID, name), item);
     }
 
-    public static void registerModItems() {
+    public static void register() {
         ManFromTheFog.LOGGER.info("Registering Items");
+
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(ModItems::addItemsToIngredientItemsGroup);
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(ModItems::addItemsToCombatGroup);
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(ModItems::addItemsToSpawnEggsGroup);
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.NATURAL).register(ModItems::addItemsToNaturalGroup);
+
         ManFromTheFog.LOGGER.info("Registered Items");
     }
 }

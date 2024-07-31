@@ -1,3 +1,6 @@
-- Improved climbing a little bit
-- Added 3 new gamerules : `manMinSpawnRange` `manMaxSpawnRange` `manShouldBreakGlass`
-- Fixed night ambient being played in day
+- (Actually) Fixed night ambience playing 24/7
+- New dimension
+- New block
+- The Man's damage now bypasses armor
+- Buffed The Man's health from 350 to 400
+- Changed how The Man checks if he's being looked at (he now checks every player)

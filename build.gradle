@@ -24,6 +24,8 @@ repositories {
 			includeGroup("com.eliotlash.mclib")
 		}
 	}
+
+	maven {url = "https://maven.kyrptonaught.dev"}
 }
 
 fabricApi {
@@ -40,6 +42,9 @@ dependencies {
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	// GeckoLib : Animations :3
 	modImplementation("software.bernie.geckolib:geckolib-fabric-${minecraft_version}:${geckolib_version}")
+
+	modImplementation 'net.kyrptonaught:customportalapi:0.0.1-beta64-1.20'
+	include 'net.kyrptonaught:customportalapi:0.0.1-beta64-1.20'
 
 	implementation("com.eliotlash.mclib:mclib:20")
 }

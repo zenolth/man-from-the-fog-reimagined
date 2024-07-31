@@ -27,7 +27,7 @@ public class ModEntities {
             FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, TheManEntityHallucination::new).dimensions(THE_MAN_HITBOX_SIZE).build()
     );
 
-    public static void registerEntities() {
+    public static void register() {
         ManFromTheFog.LOGGER.info("Registering Entities");
         FabricDefaultAttributeRegistry.register(THE_MAN, TheManEntity.createManAttributes());
         FabricDefaultAttributeRegistry.register(THE_MAN_HALLUCINATION, TheManEntity.createManAttributes());
