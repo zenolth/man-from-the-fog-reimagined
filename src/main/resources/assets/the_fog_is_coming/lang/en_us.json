@@ -21,7 +21,7 @@
   "gamerule.manSpawnChanceScales": "Should The Man's spawn chance scale by amount of players",
   "gamerule.manSpawnChance": "The Man's spawn chance",
   "gamerule.manAmbientSoundChance": "Chance to play a sound instead of spawning The Man",
-  "gamerule.manSpawnInterval": "Time between The Man's spawn opportunities",
+  "gamerule.manSpawnCooldown": "Time between The Man's spawn opportunities",
 
   "gamerule.manMinSpawnRange": "The Man's minimal spawning range",
   "gamerule.manMaxSpawnRange": "The Man's maximum spawning range",

@@ -1,6 +1,2 @@
-- (Actually) Fixed night ambience playing 24/7
-- New dimension
-- New block
-- The Man's damage now bypasses armor
-- Buffed The Man's health from 350 to 400
-- Changed how The Man checks if he's being looked at (he now checks every player)
+- Fixed The Man not spawning, at all (really weird bug)
+- The Man will now break leaves above his head if he's climbing

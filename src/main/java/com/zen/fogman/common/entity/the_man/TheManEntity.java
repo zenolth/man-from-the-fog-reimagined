@@ -463,8 +463,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public static boolean canManSpawn(ServerWorld serverWorld) {
-        return !(TheManUtils.manExists(serverWorld) || TheManUtils.hallucinationsExists(serverWorld)) &&
-                isInAllowedDimension(serverWorld);
+        return !(TheManUtils.manExists(serverWorld) || TheManUtils.hallucinationsExists(serverWorld));
     }
 
     public static boolean isInAllowedDimension(World world) {
@@ -473,6 +472,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     public boolean canSpawn(WorldAccess world, SpawnReason spawnReason) {
+        return this.canSpawn(world);
+    }
+
+    @Override
+    public boolean canSpawn(WorldView world) {
         return canManSpawn(this.getServerWorld());
     }
 
@@ -620,7 +624,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     private void breakBlocksInWay(ServerWorld serverWorld, LivingEntity target) {
-        if (this.getTarget() == null || this.isMoving() || this.path == null || this.path.getLength() > 1 || !isObstructed(serverWorld,this.getPos().subtract(0,1,0),target.getPos().subtract(0,1,0))) {
+        if (this.climbing() || this.getTarget() == null || this.isMoving() || this.path == null || this.path.getLength() > 1 || !isObstructed(serverWorld,this.getPos().subtract(0,1,0),target.getPos().subtract(0,1,0))) {
             return;
         }
 
@@ -647,7 +651,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void breakBlocksAround() {
-        if (this.isDead() || this.climbing() || this.isHallucination() || !this.getServerWorld().getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
+        if (this.isDead() || this.isHallucination() || !this.getServerWorld().getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
             return;
         }
 
@@ -664,6 +668,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
             Block block = blockState.getBlock();
 
+            if (blockPos.getX() == this.getBlockX() && blockPos.getZ() == this.getBlockZ() && this.getBlockPos().getY() < blockPos.getY() && this.climbing()) {
+                if (!blockState.isAir() && blockState.getBlock() instanceof LeavesBlock) {
+                    serverWorld.breakBlock(blockPos, false);
+                }
+            }
+
             if (block instanceof TrapdoorBlock && blockState.contains(TrapdoorBlock.OPEN)) {
                 if (blockPos.getY() > this.getBlockY()) {
                     if (!blockState.get(TrapdoorBlock.OPEN)) {
@@ -674,6 +684,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                         serverWorld.setBlockState(blockPos,blockState.with(TrapdoorBlock.OPEN,false));
                     }
                 }
+                continue;
+            }
+
+            if (this.climbing()) {
                 continue;
             }
 
