@@ -44,6 +44,8 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.*;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3f;
+import org.lwjgl.system.MathUtil;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
@@ -56,6 +58,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
+    public static final EntityDimensions HITBOX_SIZE = EntityDimensions.fixed(0.6f, 2.3f);
+    public static final EntityDimensions CROUCH_HITBOX_SIZE = EntityDimensions.fixed(0.6f, 1.3f);
+    public static final EntityDimensions CRAWL_HITBOX_SIZE = EntityDimensions.fixed(0.6f, 0.8f);
+
     public static final double MAN_SPEED = 0.48;
     public static final double MAN_CLIMB_SPEED = 0.7;
     public static final double MAN_MAX_SCAN_DISTANCE = 10000.0;
@@ -126,6 +132,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.aliveTicks = Util.secToTick(this.getRandom().nextBetween(30,120));
         this.stateManager = new StateManager(this);
 
+        this.setStepHeight(1.0f);
+        this.setNoGravity(false);
+        this.noClip = false;
+
         this.addStatusEffects();
         this.initStates();
         this.initPathfindingPenalties();
@@ -188,6 +198,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         mobNavigation.setCanPathThroughDoors(true);
         mobNavigation.setCanSwim(true);
         mobNavigation.setCanWalkOverFences(true);
+        //mobNavigation.setRangeMultiplier(4);
 
         return mobNavigation;
     }
@@ -233,6 +244,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     protected void initDataTracker() {
         super.initDataTracker();
         this.getDataTracker().startTracking(TheManDataTrackers.CLIMBING,false);
+        this.getDataTracker().startTracking(TheManDataTrackers.CROUCHING,false);
+        this.getDataTracker().startTracking(TheManDataTrackers.CRAWLING,false);
         this.getDataTracker().startTracking(TheManDataTrackers.STATE,TheManState.STARE.ordinal());
         this.getDataTracker().startTracking(TheManDataTrackers.IS_LUNGING,false);
     }
@@ -241,13 +254,33 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.getDataTracker().set(TheManDataTrackers.CLIMBING, climbing);
     }
 
-    public boolean climbing() {
+    @Override
+    public boolean isClimbing() {
         return this.getDataTracker().get(TheManDataTrackers.CLIMBING);
     }
 
-    @Override
-    public boolean isClimbing() {
-        return false;
+    public boolean shouldClimb(final Path path) {
+        if (this.getTarget() == null) {
+            return false;
+        }
+
+        return path != null && path.getLength() == 1 && this.getTarget().getBlockY() > this.getBlockY() + this.getStepHeight();
+    }
+
+    public void setCrouching(boolean crouching) {
+        this.getDataTracker().set(TheManDataTrackers.CROUCHING,crouching);
+    }
+
+    public boolean isCrouching() {
+        return this.getDataTracker().get(TheManDataTrackers.CROUCHING);
+    }
+
+    public void setCrawling(boolean crawling) {
+        this.getDataTracker().set(TheManDataTrackers.CRAWLING,crawling);
+    }
+
+    public boolean isCrawling() {
+        return this.getDataTracker().get(TheManDataTrackers.CRAWLING);
     }
 
     @Environment(EnvType.CLIENT)
@@ -310,7 +343,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     /* Animations */
     private PlayState predictate(AnimationState<TheManEntity> event) {
-        if (this.climbing()) {
+        if (this.isClimbing()) {
             return event.setAndContinue(TheManAnimations.CLIMB);
         }
 
@@ -417,6 +450,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     /* Properties and Behavior */
+
+    @Override
+    public float getStepHeight() {
+        return super.getStepHeight();
+    }
+
     @Override
     public boolean canAvoidTraps() {
         return true;
@@ -459,7 +498,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 effect.getEffectType() != StatusEffects.POISON &&
                 effect.getEffectType() != StatusEffects.INVISIBILITY &&
                 effect.getEffectType() != StatusEffects.WEAKNESS &&
-                (getWorld().isDay() && effect.getEffectType() != StatusEffects.REGENERATION);
+                (Util.isDay(this.getWorld()) && !this.getWorld().getGameRules().getBoolean(ModGamerules.MAN_CAN_SPAWN_IN_DAY) && effect.getEffectType() != StatusEffects.REGENERATION);
     }
 
     public static boolean canManSpawn(ServerWorld serverWorld) {
@@ -492,7 +531,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     protected void dropInventory() {
-        if (this.getWorld().isDay() || this.isHallucination()) {
+        if ((Util.isDay(this.getWorld()) && !this.getWorld().getGameRules().getBoolean(ModGamerules.MAN_CAN_SPAWN_IN_DAY)) || this.isHallucination()) {
             return;
         }
         this.dropStack(new ItemStack(ModItems.TEAR_OF_THE_MAN,1));
@@ -624,7 +663,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     private void breakBlocksInWay(ServerWorld serverWorld, LivingEntity target) {
-        if (this.climbing() || this.getTarget() == null || this.isMoving() || this.path == null || this.path.getLength() > 1 || !isObstructed(serverWorld,this.getPos().subtract(0,1,0),target.getPos().subtract(0,1,0))) {
+        if (this.isClimbing() || this.getTarget() == null || this.isMoving() || this.path == null || this.path.getLength() > 1 || !isObstructed(serverWorld,this.getPos().subtract(0,1,0),target.getPos().subtract(0,1,0))) {
             return;
         }
 
@@ -668,7 +707,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
             Block block = blockState.getBlock();
 
-            if (blockPos.getX() == this.getBlockX() && blockPos.getZ() == this.getBlockZ() && this.getBlockPos().getY() < blockPos.getY() && this.climbing()) {
+            if (blockPos.getX() == this.getBlockX() && blockPos.getZ() == this.getBlockZ() && this.getBlockPos().getY() < blockPos.getY() && this.isClimbing()) {
                 if (!blockState.isAir() && blockState.getBlock() instanceof LeavesBlock) {
                     serverWorld.breakBlock(blockPos, false);
                 }
@@ -687,7 +726,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 continue;
             }
 
-            if (this.climbing()) {
+            if (this.isClimbing()) {
                 continue;
             }
 
@@ -798,13 +837,49 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
-    @Nullable
-    public Path findPath(double x, double y, double z) {
-        return this.path = this.getNavigation().findPathTo(x, y, z, 0);
+    @Override
+    public EntityDimensions getDimensions(EntityPose pose) {
+
+        if (this.isCrouching()) {
+            return CROUCH_HITBOX_SIZE;
+        }
+
+        if (this.isCrawling()) {
+            return CRAWL_HITBOX_SIZE;
+        }
+
+        return HITBOX_SIZE;
     }
 
+    @Override
+    public float getEyeHeight(EntityPose pose) {
+        return this.getEyeHeight(pose,this.getDimensions(pose));
+    }
+
+    @Nullable
+    public Path findPath(double x, double y, double z) {
+        Path newPath = this.getNavigation().findPathTo(x, y, z, 0);
+        this.fixPath(newPath);
+        return this.path = newPath;
+    }
+
+    @Nullable
     public Path findPath(Vec3d position) {
         return this.findPath(position.getX(),position.getY(),position.getZ());
+    }
+
+    public void fixPath(final Path path) {
+        LivingEntity target = this.getTarget();
+
+        if (target == null) {
+            return;
+        }
+
+        if (this.shouldClimb(path)) {
+            if (path.getNode(0).getDistance(this.getBlockPos()) > 0.1) {
+                path.setNode(0,path.getNode(0).copyWithNewPosition(target.getBlockX(),target.getBlockY(),target.getBlockZ()));
+            }
+        }
     }
 
     public void moveTo(double x, double y, double z, double speed) {
@@ -863,7 +938,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             this.setHealth(this.getHealth() - 4f);
         }
 
-        if (serverWorld.isDay()) {
+        if (Util.isDay(serverWorld) && !serverWorld.getGameRules().getBoolean(ModGamerules.MAN_CAN_SPAWN_IN_DAY)) {
             this.despawn();
             return;
         }
@@ -908,128 +983,31 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
-    @Nullable
-    public static BlockPos getClosestBlockPosToTarget(ServerWorld serverWorld,Iterable<BlockPos> blockPosList,BlockPos target) {
-        double closestDistance = 0;
-        BlockPos closestBlockPos = null;
-
-        for (BlockPos blockPos : blockPosList) {
-            BlockState blockState = serverWorld.getBlockState(blockPos);
-            if (blockState.isAir()) {
-                continue;
-            }
-            double distance = target.getSquaredDistance(blockPos);
-
-            if (closestDistance == 0.0) {
-                closestDistance = distance;
-            }
-
-            if (closestDistance > distance) {
-                closestDistance = distance;
-                closestBlockPos = blockPos;
-            }
-        }
-
-        return closestBlockPos;
-    }
-
-    public static int getClimbableHeight(ServerWorld serverWorld,BlockPos blockPos) {
-        if (serverWorld.getBlockState(blockPos).isAir()) {
-            return 1;
-        }
-
-        int climbableHeight = 0;
-        BlockPos currentPosition = blockPos.up();
-        BlockState currentBlockState = serverWorld.getBlockState(currentPosition);
-
-        while (!currentBlockState.isAir()) {
-            climbableHeight++;
-            if (climbableHeight > serverWorld.getTopY()) {
-                break;
-            }
-            currentPosition = currentPosition.up();
-        }
-
-        return climbableHeight;
-    }
-
-    @Nullable
-    public static BlockPos getFirstValidClimbableBlockPos(ServerWorld serverWorld,BlockPos climbBlockPos,int height) {
-        for (BlockPos blockPos : BlockPos.iterateOutwards(climbBlockPos,1,0,1)) {
-            BlockState blockState = serverWorld.getBlockState(blockPos);
-            if (!blockState.isAir()) {
-                continue;
-            }
-
-            Vec3d origin = blockPos.toCenterPos();
-            Vec3d target = blockPos.up(height).toCenterPos();
-
-            BlockHitResult result = serverWorld.raycast(new BlockStateRaycastContext(origin,target,BlockStatePredicate.ANY));
-
-            if (result.getType() == HitResult.Type.MISS) {
-                return blockPos;
-            }
-        }
-
-        return null;
-    }
-
-    public void climbMovementTick(ServerWorld serverWorld) {
-        boolean areBlocksAround = Util.areBlocksAround(serverWorld,this.getBlockPos().up(),1,0,1) && Util.areBlocksAround(serverWorld,this.getBlockPos().up(2),1,0,1);
-
-        this.setClimbing(areBlocksAround && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY());
-
-        if (!this.climbing() || this.getTarget() == null) {
-            return;
-        }
-
-        this.setVelocity(0,MAN_CLIMB_SPEED,0);
-
-        BlockPos blockPos = getClosestBlockPosToTarget(serverWorld,BlockPos.iterateOutwards(this.getBlockPos(),1,0,1),this.getTarget().getBlockPos());
-
-        if (blockPos == null) {
-            return;
-        }
-
-        this.getLookControl().lookAt(blockPos.getX(),blockPos.getY(),blockPos.getZ());
-
-        int climbableHeight = getClimbableHeight(serverWorld,blockPos);
-
-        if (climbableHeight <= 2) {
-            climbableHeight = Math.abs(this.getTarget().getBlockY() - this.getBlockY());
-        }
-
-        BlockPos climbableBlockPos = getFirstValidClimbableBlockPos(serverWorld,blockPos.up(),climbableHeight);
-
-        if (climbableBlockPos == null) {
-            return;
-        }
-
-        Vec3d climbablePos = climbableBlockPos.toCenterPos();
-
-        this.updatePosition(climbablePos.getX(),this.getY(),climbablePos.getZ());
-    }
-
     public void movementTick(ServerWorld serverWorld) {
-
-        // If the target is higher than us, and it's more than 2 block tall, then we climb, otherwise, we don't do anything and let the
-        // pathfinding deal with moving and jumping
-        //this.climbMovementTick(serverWorld);
-
         if (this.isSubmergedInWater() && (this.getTarget() == null || this.getTarget().getBlockY() >= this.getBlockY())) {
             Vec3d oldVelocity = this.getVelocity();
-            this.setVelocity(oldVelocity.getX() * 5,0.5,oldVelocity.getZ() * 5);
+            this.setVelocity(oldVelocity.getX(),0.5,oldVelocity.getZ());
         }
 
-        if (this.climbing() && this.getTarget() != null) {
+        boolean areBlocksAboveHead = Util.areBlocksAround(serverWorld,this.getBlockPos().up(),2,0,2);
+        boolean areBlocksAroundChest = Util.areBlocksAround(serverWorld,this.getBlockPos(),2,0,2);
 
-            if (this.isOnGround()) {
-                this.jump();
-            }
+        this.setCrouching(areBlocksAboveHead && !areBlocksAroundChest && !this.isClimbing());
+        this.setCrawling(areBlocksAboveHead && areBlocksAroundChest && !this.isClimbing());
 
-            Vec3d toPlayer = this.getTarget().getPos().subtract(this.getPos()).normalize().multiply(0.2);
-            this.setVelocity(new Vec3d(toPlayer.getX(),1,toPlayer.getZ()).multiply(MAN_CLIMB_SPEED));
+        this.setClimbing(this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY() + this.getStepHeight());
+
+        System.out.printf("IS CROUCHING: %s\n", this.isCrouching());
+        System.out.printf("IS CRAWLING: %s\n", this.isCrawling());
+
+        if (this.isClimbing() && this.getTarget() != null) {
+            Vector3f direction = this.getMovementDirection().getUnitVector();
+            this.setVelocity(direction.x(),MAN_CLIMB_SPEED,direction.z());
         }
+
+        this.calculateDimensions();
+
+        System.out.printf("PATH EXISTS: %s\n", this.path != null && this.path.getLength() > 0);
     }
 
     /* Other */

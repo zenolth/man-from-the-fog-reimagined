@@ -1,3 +1,5 @@
-- Fixed The Man not spawning, at all (really weird bug)
-- The Man will now break leaves above his head if he's climbing
-- Renamed manSpawnInterval gamerule to manSpawnCooldown
+- Made The Man's climbing smarter (maybe quirky sometimes)
+- Changed The Man's hitbox size to be more accurate to his height
+- The Man can now crouch and crawl through 1x1 and 1x2 spaces
+- The Man now has a depth strider effect 24/7
+- Added manCanSpawnInDay gamerule

@@ -8,6 +8,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 import org.joml.*;
 
 import java.lang.Math;
@@ -41,6 +43,15 @@ public class Util {
         a = new Vec3d(a.getX(),0,a.getZ());
         b = new Vec3d(b.getX(),0,b.getZ());
         return a.distanceTo(b);
+    }
+
+    public static boolean isDay(World world) {
+        world.calculateAmbientDarkness();
+        return world.getAmbientDarkness() < 4;
+    }
+
+    public static boolean isNight(World world) {
+        return !isDay(world);
     }
 
     public static boolean areBlocksAround(ServerWorld serverWorld, BlockPos pos, int rangeX, int rangeY, int rangeZ) {

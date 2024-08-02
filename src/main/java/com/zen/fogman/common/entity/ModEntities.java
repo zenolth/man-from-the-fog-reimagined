@@ -13,18 +13,16 @@ import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
 public class ModEntities {
-    public static final EntityDimensions THE_MAN_HITBOX_SIZE = EntityDimensions.fixed(0.6f, 1.3f);
-
     public static final EntityType<TheManEntity> THE_MAN = Registry.register(
             Registries.ENTITY_TYPE,
             new Identifier(ManFromTheFog.MOD_ID, "the_man"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, TheManEntity::new).dimensions(THE_MAN_HITBOX_SIZE).build()
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, TheManEntity::new).dimensions(TheManEntity.HITBOX_SIZE).build()
     );
 
     public static final EntityType<TheManEntityHallucination> THE_MAN_HALLUCINATION = Registry.register(
             Registries.ENTITY_TYPE,
             new Identifier(ManFromTheFog.MOD_ID, "the_man_hallucination"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, TheManEntityHallucination::new).dimensions(THE_MAN_HITBOX_SIZE).build()
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, TheManEntityHallucination::new).dimensions(TheManEntity.HITBOX_SIZE).build()
     );
 
     public static void register() {

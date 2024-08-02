@@ -3,10 +3,10 @@
 	"package": "com.zen.fogman.common.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
-
+		"LivingEntityMixin",
+		"MobNavigationMixin"
 	],
 	"client": [
-
 	],
 	"injectors": {
 		"defaultRequire": 1

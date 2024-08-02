@@ -94,7 +94,7 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
 
         client.world.calculateAmbientDarkness();
 
-        if (client.world.getAmbientDarkness() > 4 && !soundManager.isPlaying(this.nightAmbience) && !soundManager.isPlaying(this.chaseTheme) && TheManEntity.isInAllowedDimension(client.world)) {
+        if (Util.isNight(client.world) && !soundManager.isPlaying(this.nightAmbience) && !soundManager.isPlaying(this.chaseTheme) && TheManEntity.isInAllowedDimension(client.world)) {
             soundManager.play(this.nightAmbience);
         }
 

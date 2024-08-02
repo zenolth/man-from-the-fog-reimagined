@@ -150,15 +150,15 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
             return;
         }
 
-        if (serverWorld.getAmbientDarkness() < 4) {
+        GameRules gameRules = serverWorld.getGameRules();
+
+        if (Util.isDay(serverWorld) && !gameRules.getBoolean(ModGamerules.MAN_CAN_SPAWN_IN_DAY)) {
             return;
         }
 
         if (TheManUtils.manExists(serverWorld) || TheManUtils.hallucinationsExists(serverWorld)) {
             return;
         }
-
-        GameRules gameRules = serverWorld.getGameRules();
 
         if (--spawnCooldown <= 0L) {
 
