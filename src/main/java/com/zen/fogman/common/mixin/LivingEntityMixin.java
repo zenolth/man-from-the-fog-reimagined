@@ -8,10 +8,12 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {
-    @ModifyVariable(method = "travel", at = @At("STORE"), name = "h")
+    @ModifyVariable(method = "travel", at = @At("STORE"), name = "h", ordinal = 0)
     public float fakeDepthStrider(float depthStriderBonus) {
-        if ((Object) this instanceof TheManEntity) {
-            return 1.5f;
+        if ((Object) this instanceof TheManEntity theMan) {
+            if (theMan.isTouchingWater()) {
+                return 0.5f;
+            }
         }
 
         return depthStriderBonus;

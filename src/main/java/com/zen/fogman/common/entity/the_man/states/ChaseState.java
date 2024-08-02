@@ -55,8 +55,6 @@ public class ChaseState extends AbstractState {
             }
         }
 
-
-
         for (ServerPlayerEntity player : serverWorld.getPlayers(TheManPredicates.TARGET_PREDICATE)) {
             if (player.isInRange(this.mob, TheManEntity.MAN_CHASE_DISTANCE)) {
                 if (player.isSleeping()) {

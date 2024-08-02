@@ -37,7 +37,6 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -45,7 +44,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.*;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
-import org.lwjgl.system.MathUtil;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
@@ -115,12 +113,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     // State manager
     private final StateManager stateManager;
-
-    // Booleans
-    private boolean lookedAt = false;
-
-    // Velocities
-    private Vec3d climbPosition = Vec3d.ZERO;
 
     // Maps
     public HashMap<String,Boolean> playersLookingMap = new HashMap<>();
@@ -587,7 +579,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return;
         }
         this.addStatusEffect(TheManStatusEffects.REGENERATION);
-        this.addStatusEffect(TheManStatusEffects.DOLPHINS_GRACE);
     }
 
     public void despawn() {
@@ -995,14 +986,14 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.setCrouching(areBlocksAboveHead && !areBlocksAroundChest && !this.isClimbing());
         this.setCrawling(areBlocksAboveHead && areBlocksAroundChest && !this.isClimbing());
 
-        this.setClimbing(this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY() + this.getStepHeight());
+        this.setClimbing(this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY());
 
         System.out.printf("IS CROUCHING: %s\n", this.isCrouching());
         System.out.printf("IS CRAWLING: %s\n", this.isCrawling());
 
         if (this.isClimbing() && this.getTarget() != null) {
-            Vector3f direction = this.getMovementDirection().getUnitVector();
-            this.setVelocity(direction.x(),MAN_CLIMB_SPEED,direction.z());
+            Vec3d oldVelocity = this.getVelocity();
+            this.setVelocity(oldVelocity.getX(),MAN_CLIMB_SPEED,oldVelocity.getZ());
         }
 
         this.calculateDimensions();
