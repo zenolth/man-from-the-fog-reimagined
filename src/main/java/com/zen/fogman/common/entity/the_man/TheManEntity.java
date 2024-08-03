@@ -1025,8 +1025,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.setCrawling(areBlocksAboveHead && areBlocksAroundChest && !this.isClimbing());
 
         this.setClimbing(
-                (Util.areBlocksAround(serverWorld,this.getBlockPos(),1,0,1) || Util.areBlocksAround(serverWorld,this.getBlockPos().up(),1,0,1)) &&
-                        this.getTarget() != null
+                (Util.areBlocksAround(serverWorld,this.getBlockPos().up(),1,0,1) && this.horizontalCollision) &&
+                        this.getTarget() != null &&
+                        this.getTarget().getBlockY() >= this.getBlockY()
         );
 
         if (this.isClimbing() && this.getTarget() != null) {
