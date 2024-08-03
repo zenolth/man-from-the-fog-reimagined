@@ -1,2 +1,8 @@
-- Fixed Mixin crashes
-- Fixed The Man being too fast on ground
+- The Man now, when spawning, picks if he's going to stare or stalk depending on if there's a wall between him and his target
+- Nerfed The Man's damage from 7 to 5.5
+- The Man will now block all damage when in Stare or Stalk state (without damaging the attacker)
+- The Man will now damage while blocking only if the attack was a melee attack
+- Added a new attack type to The Man : acid spit
+- The Man will now switch to Stalk state when in Stare state for too long
+- Fixed death message
+- Added 2 new gamerules : `manShouldGiveDarknessEffect` and `manShouldGiveSpeedEffect`

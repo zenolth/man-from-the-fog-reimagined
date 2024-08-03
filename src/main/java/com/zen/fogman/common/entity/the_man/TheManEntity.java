@@ -19,6 +19,8 @@ import net.minecraft.entity.ai.pathing.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.damage.DamageType;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.effect.StatusEffects;
@@ -37,6 +39,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -63,7 +66,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     public static final double MAN_SPEED = 0.48;
     public static final double MAN_CLIMB_SPEED = 0.7;
     public static final double MAN_MAX_SCAN_DISTANCE = 10000.0;
-    public static final double MAN_BLOCK_CHANCE = 0.1;
+    public static final double MAN_BLOCK_CHANCE = 0.25;
     public static final int MAN_CHASE_DISTANCE = 200;
 
     public static Block[] MAN_BREAK_WHITELIST = {
@@ -139,13 +142,22 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.setNoGravity(false);
         this.setNoDrag(false);
         if (!this.isHallucination()) {
-            switch (this.getRandom().nextBetween(0,2)) {
-                case 0:
+            if (this.getTarget() != null) {
+                BlockHitResult hitResult = serverWorld.raycast(new BlockStateRaycastContext(this.getEyePos(),this.getTarget().getEyePos(),TheManPredicates.BLOCK_STATE_PREDICATE));
+                if (hitResult.getType() == HitResult.Type.MISS) {
                     this.setState(TheManState.STARE);
-                    break;
-                case 1:
+                } else {
                     this.setState(TheManState.STALK);
-                    break;
+                }
+            } else {
+                switch (this.getRandom().nextBetween(0,2)) {
+                    case 0:
+                        this.setState(TheManState.STARE);
+                        break;
+                    case 1:
+                        this.setState(TheManState.STALK);
+                        break;
+                }
             }
         } else {
             this.startChase();
@@ -200,7 +212,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return TheManEntity.createHostileAttributes()
                 .add(EntityAttributes.GENERIC_MAX_HEALTH,400)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED,MAN_SPEED)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE,7)
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE,5.5)
                 .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK,4)
                 .add(EntityAttributes.GENERIC_ATTACK_SPEED,0.4)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE,MAN_MAX_SCAN_DISTANCE)
@@ -392,6 +404,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.playSound(ModSounds.MAN_ATTACK,this.getSoundVolume(),this.getSoundPitch());
     }
 
+    public void playSpitSound() {
+        this.playSound(ModSounds.MAN_SPIT,this.getSoundVolume(),this.getSoundPitch());
+    }
+
     public void playLungeAttackSound() {
         this.playSound(ModSounds.MAN_LUNGE_ATTACK,this.getLoudSoundVolume(),this.getSoundPitch());
     }
@@ -526,11 +542,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         if ((Util.isDay(this.getWorld()) && !this.getWorld().getGameRules().getBoolean(ModGamerules.MAN_CAN_SPAWN_IN_DAY)) || this.isHallucination()) {
             return;
         }
-        this.dropStack(new ItemStack(ModItems.TEAR_OF_THE_MAN,1));
+        this.dropStack(new ItemStack(Items.WITHER_ROSE,this.random.nextBetween(1,6)));
         if (Math.random() < 0.45) {
             this.dropStack(new ItemStack(ModItems.CLAWS,1));
         } else {
-            this.dropStack(new ItemStack(Items.WITHER_ROSE,this.random.nextBetween(1,6)));
+            this.dropStack(new ItemStack(ModItems.TEAR_OF_THE_MAN,1));
         }
     }
 
@@ -546,6 +562,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     public boolean damage(DamageSource source, float amount) {
+        if (this.getState() == TheManState.STARE || this.getState() == TheManState.STALK) {
+            this.playCritSound();
+            return false;
+        }
+
         if (this.getWorld().isNight()) {
             Entity attacker = source.getAttacker();
 
@@ -559,7 +580,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 }
 
                 if (Math.random() < MAN_BLOCK_CHANCE) {
-                    attacker.damage(new DamageSource(source.getTypeRegistryEntry(),this),amount / 4f);
+                    if (source.getTypeRegistryEntry() == DamageTypes.PLAYER_ATTACK || source.getTypeRegistryEntry() == DamageTypes.MOB_ATTACK) {
+                        attacker.damage(new DamageSource(source.getTypeRegistryEntry(),this),amount / 4f);
+                    }
                     this.playCritSound();
 
                     this.aliveTicks -= 20;
@@ -820,6 +843,21 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return this.tryAttackTarget(target);
     }
 
+    public void spitAt(LivingEntity target) {
+        TheManSpitEntity spitEntity = new TheManSpitEntity(this.getWorld(),this);
+        double velX = target.getX() - this.getX();
+        double velY = target.getBodyY(0.3) - spitEntity.getY();
+        double velZ = target.getZ() - this.getZ();
+        double gravity = Math.sqrt(velX * velX + velZ * velZ) * 0.2f;
+        spitEntity.setVelocity(velX,velY + gravity,velZ,1.5f,10.0f);
+
+        if (!this.isSilent()) {
+            this.playSpitSound();
+        }
+
+        this.getWorld().spawnEntity(spitEntity);
+    }
+
     public void attack(LivingEntity target) {
         if (this.isInAttackRange(target) && --this.attackCooldown <= 0L) {
             this.attackCooldown = Util.secToTick(this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_SPEED));
@@ -986,10 +1024,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.setCrouching(areBlocksAboveHead && !areBlocksAroundChest && !this.isClimbing());
         this.setCrawling(areBlocksAboveHead && areBlocksAroundChest && !this.isClimbing());
 
-        this.setClimbing(this.horizontalCollision && this.getTarget() != null && this.getTarget().getBlockY() > this.getBlockY());
-
-        System.out.printf("IS CROUCHING: %s\n", this.isCrouching());
-        System.out.printf("IS CRAWLING: %s\n", this.isCrawling());
+        this.setClimbing(
+                (Util.areBlocksAround(serverWorld,this.getBlockPos(),1,0,1) || Util.areBlocksAround(serverWorld,this.getBlockPos().up(),1,0,1)) &&
+                        this.getTarget() != null
+        );
 
         if (this.isClimbing() && this.getTarget() != null) {
             Vec3d oldVelocity = this.getVelocity();
@@ -997,8 +1035,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
 
         this.calculateDimensions();
-
-        System.out.printf("PATH EXISTS: %s\n", this.path != null && this.path.getLength() > 0);
     }
 
     /* Other */

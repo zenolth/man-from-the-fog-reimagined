@@ -5,6 +5,7 @@ import com.zen.fogman.common.damage_type.ModDamageTypes;
 import com.zen.fogman.common.entity.ModEntities;
 import com.zen.fogman.common.gamerules.ModGamerules;
 import com.zen.fogman.common.item.ModItems;
+import com.zen.fogman.common.particles.ModParticles;
 import com.zen.fogman.common.server.ModWorldEvents;
 import com.zen.fogman.common.server.ModNetworking;
 import com.zen.fogman.common.sounds.ModSounds;
@@ -42,6 +43,7 @@ public class ManFromTheFog implements ModInitializer {
 		ModSounds.register();
 		ModBlocks.register();
 		ModItems.register();
+		ModParticles.register();
 		ModEntities.register();
 
 		CustomPortalBuilder.beginPortal()

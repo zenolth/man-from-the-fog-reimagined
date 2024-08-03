@@ -38,6 +38,12 @@
       "the_fog_is_coming:mansounds/attack6"
     ]
   },
+  "man_spit": {
+    "subtitle": "subtitles.the_fog_is_coming.man_spit",
+    "sounds": [
+      "the_fog_is_coming:mansounds/spit"
+    ]
+  },
   "man_slash": {
     "subtitle": "subtitles.the_fog_is_coming.man_slash",
     "sounds": [

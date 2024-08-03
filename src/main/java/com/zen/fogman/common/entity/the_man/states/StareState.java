@@ -9,8 +9,10 @@ import net.minecraft.server.world.ServerWorld;
 public class StareState extends AbstractState {
 
     public static final double STARE_COOLDOWN = 4;
+    public static final double NO_STARE_COOLDOWN = 12;
 
     private long stareCooldown = Util.secToTick(STARE_COOLDOWN);
+    private long noStareCooldown = Util.secToTick(NO_STARE_COOLDOWN);
 
     public StareState(TheManEntity mob) {
         super(mob);
@@ -43,7 +45,12 @@ public class StareState extends AbstractState {
                 }
                 this.stareCooldown = Util.secToTick(STARE_COOLDOWN);
             }
+            this.noStareCooldown = Util.secToTick(NO_STARE_COOLDOWN);
         } else {
+            if (--this.noStareCooldown <= 0L) {
+                this.mob.setState(TheManState.STALK);
+                this.noStareCooldown = Util.secToTick(NO_STARE_COOLDOWN);
+            }
             this.stareCooldown = Util.secToTick(STARE_COOLDOWN);
         }
     }

@@ -12,6 +12,7 @@ public class ModSounds {
     public static SoundEvent MAN_ALARM = registerSound("man_alarm");
     public static SoundEvent MAN_PAIN = registerSound("man_pain");
     public static SoundEvent MAN_ATTACK = registerSound("man_attack");
+    public static SoundEvent MAN_SPIT = registerSound("man_spit");
     public static SoundEvent MAN_SLASH = registerSound("man_slash");
     public static SoundEvent MAN_SPOT = registerSound("man_spot");
     public static SoundEvent MAN_IDLECALM = registerSound("man_idlecalm");
