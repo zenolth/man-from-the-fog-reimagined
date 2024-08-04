@@ -1,0 +1,31 @@
+{
+  "block.the_fog_is_coming.bleeding_obsidian": "Кровоточащий обсидиан",
+
+  "item.the_fog_is_coming.tear_of_the_man": "Слеза §kГромобоя§r",
+  "item.the_fog_is_coming.fogman_spawn_egg": "Яйцо призыва §kГромобоя§r",
+  "item.the_fog_is_coming.mans_claws": "Когти §kГромобоя§r",
+
+  "entity.the_fog_is_coming.the_man": "§kГромобой§r",
+  "entity.the_fog_is_coming.the_man_hallucination": "§kГромобой§r",
+
+  "subtitles.the_fog_is_coming.man_alarm": "§kГромобой§r настораживает",
+  "subtitles.the_fog_is_coming.man_pain": "§kГромобой§r ранен",
+  "subtitles.the_fog_is_coming.man_attack": "§kГромобой§r нападает",
+  "subtitles.the_fog_is_coming.man_spit": "§kГромобой§r плюётся кислотой",
+  "subtitles.the_fog_is_coming.man_slash": "§kГромобой§r разрубает",
+  "subtitles.the_fog_is_coming.man_spot": "§kГромобой§r кого-то заметил",
+  "subtitles.the_fog_is_coming.man_idlecalm": "§kГромобой§r рычит",
+  "subtitles.the_fog_is_coming.man_death": "§kГромобой§r умирает",
+  "subtitles.the_fog_is_coming.man_lunge": "§kГромобой§r бросается",
+  "subtitles.the_fog_is_coming.man_creepy": "§kГромобой§r",
+
+  "gamerule.manSpawnChanceScales": "Должен ли шанс появления Громобоя увеличиваться в зависимости от количества игроков",
+  "gamerule.manSpawnChance": "Шанс появления Громобоя",
+  "gamerule.manAmbientSoundChance": "Шанс проигрывания звука вместо появления Громобоя",
+  "gamerule.manSpawnCooldown": "Время между возможными появлениями Громобоя",
+
+  "gamerule.manMinSpawnRange": "Минимальная дистанция появления Громобоя",
+  "gamerule.manMaxSpawnRange": "Максимальная дистанция появления Громобоя",
+
+  "gamerule.manShouldBreakGlass": "Может ли Громобой ломать стекло"
+}
