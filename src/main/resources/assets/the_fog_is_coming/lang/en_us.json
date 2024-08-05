@@ -9,6 +9,7 @@
   "entity.the_fog_is_coming.the_man_hallucination": "§kThe Man§r",
 
   "effect.the_fog_is_coming.paranoia": "Paranoia",
+  "effect.the_fog_is_coming.paranoia.description": "Given to players after §kThe Man§r kills someone in his chase state.",
 
   "subtitles.the_fog_is_coming.man_alarm": "§kThe Man§r alarms",
   "subtitles.the_fog_is_coming.man_pain": "§kThe Man§r hurts",
