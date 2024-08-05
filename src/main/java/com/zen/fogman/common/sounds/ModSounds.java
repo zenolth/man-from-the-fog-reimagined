@@ -9,13 +9,13 @@ import net.minecraft.util.Identifier;
 public class ModSounds {
     public static SoundEvent NIGHT_AMBIENCE = registerSound("night_ambience");
 
+    public static SoundEvent HORROR = registerSound("horror");
+
     public static SoundEvent MAN_ALARM = registerSound("man_alarm");
     public static SoundEvent MAN_PAIN = registerSound("man_pain");
     public static SoundEvent MAN_ATTACK = registerSound("man_attack");
     public static SoundEvent MAN_SPIT = registerSound("man_spit");
     public static SoundEvent MAN_SLASH = registerSound("man_slash");
-    public static SoundEvent MAN_SPOT = registerSound("man_spot");
-    public static SoundEvent MAN_IDLECALM = registerSound("man_idlecalm");
     public static SoundEvent MAN_CHASE = registerSound("man_chase");
     public static SoundEvent MAN_DEATH = registerSound("man_death");
     public static SoundEvent MAN_LUNGE = registerSound("man_lunge");

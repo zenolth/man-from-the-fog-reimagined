@@ -1,1 +1,4 @@
-- Fixed climbing being weird
+- Added new status effect : Paranoia
+  - Given to players after The Man kills someone in his Chase state
+- Removed the Minecraft and Edition logo replacement
+- Added Russian translations by [Korben](https://github.com/mpustovoi)

@@ -9,6 +9,7 @@ import com.zen.fogman.common.particles.ModParticles;
 import com.zen.fogman.common.server.ModWorldEvents;
 import com.zen.fogman.common.server.ModNetworking;
 import com.zen.fogman.common.sounds.ModSounds;
+import com.zen.fogman.common.status_effects.ModStatusEffects;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.dimension.v1.FabricDimensions;
@@ -39,6 +40,7 @@ public class ManFromTheFog implements ModInitializer {
 		LOGGER.info("Initializing %s".formatted(MOD_ID));
 
 		ModGamerules.register();
+		ModStatusEffects.register();
 		ModDamageTypes.register();
 		ModSounds.register();
 		ModBlocks.register();

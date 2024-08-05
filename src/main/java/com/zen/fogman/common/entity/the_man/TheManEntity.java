@@ -7,6 +7,7 @@ import com.zen.fogman.common.gamerules.ModGamerules;
 import com.zen.fogman.common.item.ModItems;
 import com.zen.fogman.common.other.Util;
 import com.zen.fogman.common.sounds.ModSounds;
+import com.zen.fogman.common.status_effects.ModStatusEffects;
 import com.zen.fogman.common.world.dimension.ModDimensions;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -34,6 +35,7 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
@@ -116,6 +118,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     // State manager
     private final StateManager stateManager;
+
+    // Chances
+    private double blockChance = MAN_BLOCK_CHANCE;
 
     // Maps
     public HashMap<String,Boolean> playersLookingMap = new HashMap<>();
@@ -210,11 +215,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     /* Attributes */
     public static DefaultAttributeContainer.Builder createManAttributes() {
         return TheManEntity.createHostileAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH,400)
+                .add(EntityAttributes.GENERIC_MAX_HEALTH,420)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED,MAN_SPEED)
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE,5.5)
-                .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK,4)
-                .add(EntityAttributes.GENERIC_ATTACK_SPEED,0.4)
+                .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK,3.5)
+                .add(EntityAttributes.GENERIC_ATTACK_SPEED,0.5)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE,MAN_MAX_SCAN_DISTANCE)
                 .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE,100)
                 .add(EntityAttributes.GENERIC_ARMOR,7)
@@ -370,6 +375,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     /* Hallucinations */
     public boolean isHallucination() {
+        return false;
+    }
+
+    public boolean isParanoia() {
         return false;
     }
 
@@ -552,7 +561,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     public int getXpToDrop() {
-        return 20;
+        return 52;
     }
 
     @Override
@@ -560,10 +569,29 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return 0;
     }
 
+    public void blockDamage(DamageSource source,float amount) {
+        Entity attacker = source.getAttacker();
+
+        if (attacker == null) {
+            return;
+        }
+
+        if (attacker instanceof LivingEntity livingEntity) {
+            if (amount > 0 && (source.getTypeRegistryEntry() == DamageTypes.PLAYER_ATTACK || source.getTypeRegistryEntry() == DamageTypes.MOB_ATTACK)) {
+                livingEntity.damage(new DamageSource(source.getTypeRegistryEntry(),this),amount);
+            }
+            this.playCritSound();
+        }
+    }
+
+    public void blockDamage(DamageSource source) {
+        this.blockDamage(source,0);
+    }
+
     @Override
     public boolean damage(DamageSource source, float amount) {
         if (this.getState() == TheManState.STARE || this.getState() == TheManState.STALK) {
-            this.playCritSound();
+            this.blockDamage(source);
             return false;
         }
 
@@ -573,17 +601,18 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             if (attacker instanceof LivingEntity livingEntity && !livingEntity.getMainHandStack().isOf(ModItems.CLAWS) && !this.isHallucination()) {
 
                 if (attacker instanceof IronGolemEntity) {
-                    attacker.damage(new DamageSource(source.getTypeRegistryEntry(),this),amount);
-                    this.playCritSound();
+                    this.blockDamage(source,amount * 2f);
 
                     return false;
                 }
 
-                if (Math.random() < MAN_BLOCK_CHANCE) {
-                    if (source.getTypeRegistryEntry() == DamageTypes.PLAYER_ATTACK || source.getTypeRegistryEntry() == DamageTypes.MOB_ATTACK) {
-                        attacker.damage(new DamageSource(source.getTypeRegistryEntry(),this),amount / 4f);
+                if (Math.random() < this.blockChance) {
+                    if (this.blockChance < 0.9) {
+                        this.blockChance += 0.1;
+                    } else {
+                        this.blockChance = 0.9;
                     }
-                    this.playCritSound();
+                    this.blockDamage(source,amount / 4f);
 
                     this.aliveTicks -= 20;
 
@@ -953,7 +982,20 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return;
         }
 
-        if (this.getTarget() != null && this.getTarget().isDead()) {
+        if (this.getState() == TheManState.CHASE && this.getTarget() != null && this.getTarget().isDead()) {
+            for (ServerPlayerEntity player : serverWorld.getPlayers(TheManPredicates.TARGET_PREDICATE)) {
+                if (player.isInRange(this, TheManEntity.MAN_CHASE_DISTANCE)) {
+                    if (!player.hasStatusEffect(ModStatusEffects.PARANOIA)) {
+                        player.addStatusEffect(new StatusEffectInstance(
+                                ModStatusEffects.PARANOIA,
+                                Util.secToTick(120.0),
+                                1,
+                                false,
+                                true
+                        ));
+                    }
+                }
+            }
             this.despawn();
             return;
         }
@@ -970,6 +1012,14 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         if (Util.isDay(serverWorld) && !serverWorld.getGameRules().getBoolean(ModGamerules.MAN_CAN_SPAWN_IN_DAY)) {
             this.despawn();
             return;
+        }
+
+        if (this.blockChance > MAN_BLOCK_CHANCE) {
+            this.blockChance -= 0.05;
+        }
+
+        if (this.blockChance < MAN_BLOCK_CHANCE) {
+            this.blockChance = MAN_BLOCK_CHANCE;
         }
 
         this.movementTick(serverWorld);
@@ -991,24 +1041,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 this.setLunging(false);
             }
         }
-
-        this.targetTick();
     }
 
     @Override
     protected void mobTick() {
         if (!this.getWorld().isClient()) {
             this.serverTick((ServerWorld) this.getWorld());
-        }
-    }
-
-    public void targetTick() {
-        if (this.getTarget() == null) {
-            return;
-        }
-
-        if (this.getTarget().isDead() && this.getState() == TheManState.CHASE) {
-            this.despawn();
         }
     }
 
@@ -1025,9 +1063,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.setCrawling(areBlocksAboveHead && areBlocksAroundChest && !this.isClimbing());
 
         this.setClimbing(
-                (Util.areBlocksAround(serverWorld,this.getBlockPos().up(),1,0,1) && this.horizontalCollision) &&
-                        this.getTarget() != null &&
-                        this.getTarget().getBlockY() >= this.getBlockY()
+                this.horizontalCollision &&
+                this.getTarget() != null &&
+                this.getTarget().getBlockY() >= this.getBlockY()
         );
 
         if (this.isClimbing() && this.getTarget() != null) {

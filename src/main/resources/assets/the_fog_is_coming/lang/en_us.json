@@ -8,6 +8,8 @@
   "entity.the_fog_is_coming.the_man": "§kThe Man§r",
   "entity.the_fog_is_coming.the_man_hallucination": "§kThe Man§r",
 
+  "effect.the_fog_is_coming.paranoia": "Paranoia",
+
   "subtitles.the_fog_is_coming.man_alarm": "§kThe Man§r alarms",
   "subtitles.the_fog_is_coming.man_pain": "§kThe Man§r hurts",
   "subtitles.the_fog_is_coming.man_attack": "§kThe Man§r attacks",

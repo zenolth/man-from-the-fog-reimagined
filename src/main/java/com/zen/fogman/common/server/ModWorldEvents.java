@@ -51,45 +51,6 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
         return list.get(random.nextInt(list.size()));
     }
 
-    /**
-     * Generates a random position around position
-     * @param serverWorld The World
-     * @param origin Position to generate around
-     * @param direction Direction the "player" is looking into
-     * @param minRange Minimum range to generate
-     * @param maxRange Maximum range to generate
-     * @return The generated position
-     */
-    public static Vec3d getRandomSpawnBehindDirection(ServerWorld serverWorld, Random random, Vec3d origin, Vec3d direction, int minRange, int maxRange) {
-        direction = direction.multiply(-1);
-        if (minRange == maxRange) {
-            direction = direction.multiply(minRange);
-        } else {
-            direction = direction.multiply(maxRange > minRange ? random.nextInt(minRange,maxRange) : random.nextInt(maxRange,minRange));
-        }
-        direction = direction.rotateY((float) Math.toRadians((random.nextFloat(-60,60))));
-
-        return serverWorld.getTopPosition(Heightmap.Type.WORLD_SURFACE,BlockPos.ofFloored(origin.add(direction))).toCenterPos();
-    }
-
-    /**
-     * Generates a random position around position
-     * @param serverWorld The World
-     * @param origin Position to generate around
-     * @param direction Direction the "player" is looking into
-     * @return The generated position
-     */
-    public static Vec3d getRandomSpawnBehindDirection(ServerWorld serverWorld, Random random, Vec3d origin, Vec3d direction) {
-        return getRandomSpawnBehindDirection(
-                serverWorld,
-                random,
-                origin,
-                direction,
-                serverWorld.getGameRules().getInt(ModGamerules.MAN_MIN_SPAWN_RANGE),
-                serverWorld.getGameRules().getInt(ModGamerules.MAN_MAX_SPAWN_RANGE)
-        );
-    }
-
     public static void playCreepySound(ServerWorld serverWorld,double x, double y, double z) {
         serverWorld.playSound(null,x,y,z, ModSounds.MAN_CREEPY, SoundCategory.AMBIENT,MAN_CREEPY_VOLUME,1f);
     }
@@ -100,7 +61,7 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
             return;
         }
         ServerWorld world = player.getServerWorld();
-        Vec3d spawnPosition = getRandomSpawnBehindDirection(world,random,player.getPos(), Util.getRotationVector(0,player.getYaw(1.0f)));
+        Vec3d spawnPosition = Util.getRandomSpawnBehindDirection(world,random,player.getPos(), Util.getRotationVector(0,player.getYaw(1.0f)));
         TheManEntity man = new TheManEntity(ModEntities.THE_MAN,world);
         if (man.canSpawn(world)) {
             man.setPosition(spawnPosition);
@@ -120,7 +81,7 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
             return;
         }
         ServerWorld world = player.getServerWorld();
-        Vec3d soundPosition = getRandomSpawnBehindDirection(world,random,player.getPos(), Util.getRotationVector(0,player.getYaw(1.0f)));
+        Vec3d soundPosition = Util.getRandomSpawnBehindDirection(world,random,player.getPos(), Util.getRotationVector(0,player.getYaw(1.0f)));
         playCreepySound(world,soundPosition.getX(),soundPosition.getY(),soundPosition.getZ());
     }
 
@@ -169,6 +130,11 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
             }
 
             double spawnChance = gameRules.get(ModGamerules.MAN_SPAWN_CHANCE).get() * spawnChanceMul;
+
+            if (gameRules.getBoolean(ModGamerules.MAN_CAN_SPAWN_IN_DAY) && serverWorld.getRegistryKey() == World.OVERWORLD && Util.isDay(serverWorld)) {
+                spawnChance /= 2.0;
+            }
+
             double ambientChance = gameRules.get(ModGamerules.MAN_AMBIENT_SOUND_CHANCE).get();
 
             double spawnRandom = Math.random();

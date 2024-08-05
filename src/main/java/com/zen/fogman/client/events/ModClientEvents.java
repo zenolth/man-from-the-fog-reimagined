@@ -29,11 +29,24 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
     public static final double MAN_DETECT_RANGE = 1024;
 
     public PositionedSoundInstance chaseTheme;
+    public PositionedSoundInstance horrorSound;
     public PositionedSoundInstance nightAmbience;
 
+    private boolean didChase = false;
+
     public ModClientEvents() {
-        this.chaseTheme = PositionedSoundInstance.master(ModSounds.MAN_CHASE,1f);
+        this.chaseTheme = PositionedSoundInstance.master(ModSounds.MAN_CHASE,1f, 0.2f);
+        this.horrorSound = PositionedSoundInstance.master(ModSounds.HORROR,1f,0.25f);
         this.nightAmbience = PositionedSoundInstance.master(ModSounds.NIGHT_AMBIENCE,1f,0.15f);
+    }
+
+    public void stopSounds(SoundManager soundManager) {
+        if (soundManager.isPlaying(this.nightAmbience)) {
+            soundManager.stop(this.nightAmbience);
+        }
+        if (soundManager.isPlaying(this.chaseTheme)) {
+            soundManager.stop(this.chaseTheme);
+        }
     }
 
     public void cameraTick(MinecraftClient client, TheManEntity theMan) {
@@ -79,20 +92,13 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
         SoundManager soundManager = client.getSoundManager();
 
         if (client.world == null) {
-            if (soundManager.isPlaying(this.nightAmbience)) {
-                soundManager.stop(this.nightAmbience);
-            }
-            if (soundManager.isPlaying(this.chaseTheme)) {
-                soundManager.stop(this.chaseTheme);
-            }
+            this.stopSounds(soundManager);
             return;
         }
 
         if (client.player == null) {
             return;
         }
-
-        client.world.calculateAmbientDarkness();
 
         if (Util.isNight(client.world) && !soundManager.isPlaying(this.nightAmbience) && !soundManager.isPlaying(this.chaseTheme) && TheManEntity.isInAllowedDimension(client.world)) {
             soundManager.play(this.nightAmbience);
@@ -116,10 +122,18 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
             this.cameraTick(client,theMan);
 
             if (theMan.getState() == TheManState.CHASE && theMan.isInRange(client.player, TheManEntity.MAN_CHASE_DISTANCE)) {
+                if (!this.didChase && !soundManager.isPlaying(this.horrorSound)) {
+                    this.didChase = true;
+                    soundManager.play(this.horrorSound);
+                }
+
                 if (!soundManager.isPlaying(this.chaseTheme)) {
                     soundManager.play(this.chaseTheme);
                 }
             } else {
+                if (this.didChase) {
+                    this.didChase = false;
+                }
                 if (soundManager.isPlaying(this.chaseTheme)) {
                     soundManager.stop(this.chaseTheme);
                 }

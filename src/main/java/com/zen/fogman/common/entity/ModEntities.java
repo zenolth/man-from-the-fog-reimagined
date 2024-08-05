@@ -3,6 +3,7 @@ package com.zen.fogman.common.entity;
 import com.zen.fogman.common.ManFromTheFog;
 import com.zen.fogman.common.entity.the_man.TheManEntity;
 import com.zen.fogman.common.entity.the_man.TheManEntityHallucination;
+import com.zen.fogman.common.entity.the_man.TheManEntityParanoia;
 import com.zen.fogman.common.entity.the_man.TheManSpitEntity;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
@@ -26,6 +27,12 @@ public class ModEntities {
             FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, TheManEntityHallucination::new).dimensions(TheManEntity.HITBOX_SIZE).build()
     );
 
+    public static final EntityType<TheManEntityParanoia> THE_MAN_PARANOIA = Registry.register(
+            Registries.ENTITY_TYPE,
+            new Identifier(ManFromTheFog.MOD_ID, "the_man_paranoia"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, TheManEntityParanoia::new).dimensions(TheManEntity.HITBOX_SIZE).build()
+    );
+
     // Projectiles
     public static final EntityType<TheManSpitEntity> THE_MAN_SPIT = Registry.register(
             Registries.ENTITY_TYPE,
@@ -38,6 +45,7 @@ public class ModEntities {
         ManFromTheFog.LOGGER.info("Registering Entities");
         FabricDefaultAttributeRegistry.register(THE_MAN, TheManEntity.createManAttributes());
         FabricDefaultAttributeRegistry.register(THE_MAN_HALLUCINATION, TheManEntity.createManAttributes());
+        FabricDefaultAttributeRegistry.register(THE_MAN_PARANOIA, TheManEntity.createManAttributes());
         ManFromTheFog.LOGGER.info("Registered Entities");
     }
 }

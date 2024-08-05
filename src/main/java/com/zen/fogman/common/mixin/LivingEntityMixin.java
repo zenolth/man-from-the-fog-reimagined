@@ -12,7 +12,7 @@ public abstract class LivingEntityMixin {
     public float fakeDepthStrider(float depthStriderBonus) {
         if ((Object) this instanceof TheManEntity theMan) {
             if (theMan.isTouchingWater()) {
-                return 0.5f;
+                return 1.2f;
             }
         }
 

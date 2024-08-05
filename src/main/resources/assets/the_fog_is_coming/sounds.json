@@ -108,5 +108,13 @@
       "the_fog_is_coming:mansounds/creepy7",
       "the_fog_is_coming:mansounds/creepy8"
     ]
+  },
+
+  "horror": {
+    "sounds:": [
+      "the_fog_is_coming:horror/horror1",
+      "the_fog_is_coming:horror/horror2",
+      "the_fog_is_coming:horror/horror3"
+    ]
   }
 }

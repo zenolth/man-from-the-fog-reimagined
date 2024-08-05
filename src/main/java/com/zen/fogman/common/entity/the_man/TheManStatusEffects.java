@@ -1,6 +1,7 @@
 package com.zen.fogman.common.entity.the_man;
 
 import com.zen.fogman.common.other.Util;
+import com.zen.fogman.common.status_effects.ModStatusEffects;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 
@@ -35,15 +36,4 @@ public class TheManStatusEffects {
             false,
             false
     );
-    public static final StatusEffectInstance DOLPHINS_GRACE = new StatusEffectInstance(
-            StatusEffects.DOLPHINS_GRACE,
-            StatusEffectInstance.INFINITE,
-            1,
-            false,
-            false
-    );
-
-    public static final StatusEffectInstance GLOWING = new StatusEffectInstance(StatusEffects.GLOWING,50);
-
-    public static final HashSet<StatusEffectInstance> EMPTY_STATUS_EFFECT_COLLECTION = new HashSet<>();
 }
