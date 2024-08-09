@@ -48,7 +48,7 @@ public class TheManEntityParanoia extends TheManEntityHallucination {
 
     @Override
     public boolean isInvisibleTo(PlayerEntity player) {
-        return this.getOwner() != null && player == this.getOwner();
+        return this.getOwner() != null && player.getUuid() == this.getOwner().getUuid();
     }
 
     @Override

@@ -1,5 +1,6 @@
 {
   "block.the_fog_is_coming.bleeding_obsidian": "Bleeding Obsidian",
+  "block.the_fog_is_coming.enshrouded_portal": "Enshrouded Portal",
 
   "item.the_fog_is_coming.tear_of_the_man": "Tear Of §kThe Man§r",
   "item.the_fog_is_coming.fogman_spawn_egg": "§kThe Man§r Spawn Egg",
@@ -7,6 +8,7 @@
 
   "entity.the_fog_is_coming.the_man": "§kThe Man§r",
   "entity.the_fog_is_coming.the_man_hallucination": "§kThe Man§r",
+  "entity.the_fog_is_coming.the_man_paranoia": "The Man?",
 
   "effect.the_fog_is_coming.paranoia": "Paranoia",
 
@@ -26,8 +28,14 @@
   "gamerule.manAmbientSoundChance": "Chance to play a sound instead of spawning The Man",
   "gamerule.manSpawnCooldown": "Time between The Man's spawn opportunities",
 
+  "gamerule.manCanSpawnInDay": "Should The Man spawn when it's day",
+
+  "gamerule.manShouldGiveDarknessEffect": "Should The Man give Darkness effect to close players",
+  "gamerule.manShouldGiveSpeedEffect": "Should The Man give Speed effect to close players",
+
   "gamerule.manMinSpawnRange": "The Man's minimal spawning range",
   "gamerule.manMaxSpawnRange": "The Man's maximum spawning range",
 
-  "gamerule.manShouldBreakGlass": "Is The Man allowed to break glass"
+  "gamerule.manShouldBreakGlass": "Is The Man allowed to break glass",
+  "gamerule.manShouldBreakLightSources": "Is The Man allowed to break light sources"
 }

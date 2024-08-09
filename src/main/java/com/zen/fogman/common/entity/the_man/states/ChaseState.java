@@ -14,8 +14,8 @@ public class ChaseState extends AbstractState {
     public static final double LUNGE_COOLDOWN = 30;
     public static final double LUNGE_CHANCE = 0.4;
 
-    public static final double SPIT_COOLDOWN = 15;
-    public static final double SPIT_CHANCE = 0.45;
+    public static final double SPIT_COOLDOWN = 20;
+    public static final double SPIT_CHANCE = 0.8;
 
     public static final double HALLUCINATION_COOLDOWN = 60;
     public static final double HALLUCINATION_CHANCE = 0.1;

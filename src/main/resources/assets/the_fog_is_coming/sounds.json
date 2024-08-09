@@ -111,7 +111,7 @@
   },
 
   "horror": {
-    "sounds:": [
+    "sounds": [
       "the_fog_is_coming:horror/horror1",
       "the_fog_is_coming:horror/horror2",
       "the_fog_is_coming:horror/horror3"

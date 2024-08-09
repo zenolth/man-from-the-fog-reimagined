@@ -61,9 +61,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
-    public static final EntityDimensions HITBOX_SIZE = EntityDimensions.fixed(0.6f, 2.3f);
-    public static final EntityDimensions CROUCH_HITBOX_SIZE = EntityDimensions.fixed(0.6f, 1.3f);
-    public static final EntityDimensions CRAWL_HITBOX_SIZE = EntityDimensions.fixed(0.6f, 0.8f);
+    public static final EntityDimensions HITBOX_SIZE = EntityDimensions.fixed(0.8f, 2.3f);
+    public static final EntityDimensions CROUCH_HITBOX_SIZE = EntityDimensions.fixed(0.8f, 1.3f);
+    public static final EntityDimensions CRAWL_HITBOX_SIZE = EntityDimensions.fixed(0.8f, 0.8f);
 
     public static final double MAN_SPEED = 0.48;
     public static final double MAN_CLIMB_SPEED = 0.7;
@@ -179,17 +179,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void initPathfindingPenalties() {
-        this.setPathfindingPenalty(PathNodeType.WALKABLE,4.0f);
-        this.setPathfindingPenalty(PathNodeType.OPEN,2.0f);
-        this.setPathfindingPenalty(PathNodeType.UNPASSABLE_RAIL,0);
-        this.setPathfindingPenalty(PathNodeType.FENCE,0);
-        this.setPathfindingPenalty(PathNodeType.DOOR_WOOD_CLOSED,0);
-        this.setPathfindingPenalty(PathNodeType.DOOR_IRON_CLOSED,0);
-        this.setPathfindingPenalty(PathNodeType.DANGER_FIRE,-1);
-        this.setPathfindingPenalty(PathNodeType.DAMAGE_FIRE,-1);
         this.setPathfindingPenalty(PathNodeType.LEAVES,0);
-        this.setPathfindingPenalty(PathNodeType.DANGER_POWDER_SNOW,-1);
-        this.setPathfindingPenalty(PathNodeType.TRAPDOOR,0);
+        this.setPathfindingPenalty(PathNodeType.UNPASSABLE_RAIL,0);
+        this.setPathfindingPenalty(PathNodeType.DOOR_OPEN,0);
+        this.setPathfindingPenalty(PathNodeType.DOOR_IRON_CLOSED,0);
+        this.setPathfindingPenalty(PathNodeType.DOOR_WOOD_CLOSED,0);
     }
 
     public void initStates() {
@@ -203,11 +197,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     protected EntityNavigation createNavigation(World world) {
         SpiderNavigation mobNavigation = new SpiderNavigation(this,world);
 
-        mobNavigation.setCanEnterOpenDoors(true);
-        mobNavigation.setCanPathThroughDoors(true);
         mobNavigation.setCanSwim(true);
-        mobNavigation.setCanWalkOverFences(true);
-        //mobNavigation.setRangeMultiplier(4);
+        mobNavigation.setRangeMultiplier(4);
 
         return mobNavigation;
     }
@@ -219,7 +210,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED,MAN_SPEED)
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE,5.5)
                 .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK,3.5)
-                .add(EntityAttributes.GENERIC_ATTACK_SPEED,0.5)
+                .add(EntityAttributes.GENERIC_ATTACK_SPEED,0.35)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE,MAN_MAX_SCAN_DISTANCE)
                 .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE,100)
                 .add(EntityAttributes.GENERIC_ARMOR,7)
@@ -590,12 +581,21 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Override
     public boolean damage(DamageSource source, float amount) {
+        if (source.getTypeRegistryEntry() == DamageTypes.IN_WALL) {
+            return false;
+        }
+
         if (this.getState() == TheManState.STARE || this.getState() == TheManState.STALK) {
             this.blockDamage(source);
             return false;
         }
 
-        if (this.getWorld().isNight()) {
+        if (source.getName().contains("bullet")) {
+            this.blockDamage(source);
+            return false;
+        }
+
+        if (Util.isNight(this.getWorld())) {
             Entity attacker = source.getAttacker();
 
             if (attacker instanceof LivingEntity livingEntity && !livingEntity.getMainHandStack().isOf(ModItems.CLAWS) && !this.isHallucination()) {
@@ -787,7 +787,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             }
 
             if (!blockState.emitsRedstonePower()) {
-                if (block instanceof TorchBlock) {
+                if (block instanceof TorchBlock && serverWorld.getGameRules().getBoolean(ModGamerules.MAN_SHOULD_BREAK_LIGHT_SOURCES)) {
                     serverWorld.breakBlock(blockPos, true);
                     serverWorld.playSoundAtBlockCenter(
                             blockPos,
@@ -799,11 +799,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                     );
                 }
 
-                if (!serverWorld.getGameRules().getBoolean(ModGamerules.MAN_SHOULD_BREAK_GLASS)) {
-                    continue;
-                }
-
-                if (block instanceof AbstractGlassBlock || block instanceof PaneBlock || blockState.getLuminance() >= 12) {
+                if ((block instanceof AbstractGlassBlock || block instanceof PaneBlock && serverWorld.getGameRules().getBoolean(ModGamerules.MAN_SHOULD_BREAK_GLASS)) || (blockState.getLuminance() >= 12 && serverWorld.getGameRules().getBoolean(ModGamerules.MAN_SHOULD_BREAK_LIGHT_SOURCES))) {
                     serverWorld.breakBlock(blockPos, true);
                     serverWorld.playSoundAtBlockCenter(
                             blockPos,
@@ -875,10 +871,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     public void spitAt(LivingEntity target) {
         TheManSpitEntity spitEntity = new TheManSpitEntity(this.getWorld(),this);
         double velX = target.getX() - this.getX();
-        double velY = target.getBodyY(0.3) - spitEntity.getY();
+        double velY = target.getY() - this.getY();
         double velZ = target.getZ() - this.getZ();
-        double gravity = Math.sqrt(velX * velX + velZ * velZ) * 0.2f;
-        spitEntity.setVelocity(velX,velY + gravity,velZ,1.5f,10.0f);
+        spitEntity.setVelocity(velX,velY,velZ,1.5f,10.0f);
 
         if (!this.isSilent()) {
             this.playSpitSound();
@@ -1015,7 +1010,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
 
         if (this.blockChance > MAN_BLOCK_CHANCE) {
-            this.blockChance -= 0.05;
+            this.blockChance -= 0.01;
         }
 
         if (this.blockChance < MAN_BLOCK_CHANCE) {
@@ -1056,17 +1051,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             this.setVelocity(oldVelocity.getX(),0.5,oldVelocity.getZ());
         }
 
-        boolean areBlocksAboveHead = Util.areBlocksAround(serverWorld,this.getBlockPos().up(),2,0,2);
-        boolean areBlocksAroundChest = Util.areBlocksAround(serverWorld,this.getBlockPos(),2,0,2);
+        boolean areBlocksAboveHead = Util.areBlocksAround(serverWorld,this.getBlockPos().up(2),2,0,2);
+        boolean areBlocksAroundChest = Util.areBlocksAround(serverWorld,this.getBlockPos().up(1),2,0,2);
 
+        this.setClimbing(this.getTarget() != null && ((this.getTarget().getBlockY() > this.getBlockY() && Util.areBlocksAround(serverWorld,this.getBlockPos().up(2),1,0,1) && Util.get2dDistance(this.getTarget().getPos(),this.getPos()) < 5) || this.horizontalCollision));
         this.setCrouching(areBlocksAboveHead && !areBlocksAroundChest && !this.isClimbing());
         this.setCrawling(areBlocksAboveHead && areBlocksAroundChest && !this.isClimbing());
-
-        this.setClimbing(
-                this.horizontalCollision &&
-                this.getTarget() != null &&
-                this.getTarget().getBlockY() >= this.getBlockY()
-        );
 
         if (this.isClimbing() && this.getTarget() != null) {
             Vec3d oldVelocity = this.getVelocity();
