@@ -1,5 +1,8 @@
 package com.zen.fogman.client.events;
 
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.zen.fogman.common.ManFromTheFog;
 import com.zen.fogman.common.entity.ModEntities;
 import com.zen.fogman.common.entity.the_man.TheManEntity;
 import com.zen.fogman.common.entity.the_man.TheManPredicates;
@@ -9,14 +12,18 @@ import com.zen.fogman.common.sounds.ModSounds;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.sound.SoundManager;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockStateRaycastContext;
 import org.joml.Matrix4f;
@@ -28,15 +35,18 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
 
     public static final double MAN_DETECT_RANGE = 1024;
 
+    public static Identifier VIGNETTE_TEXTURE = new Identifier(ManFromTheFog.MOD_ID,"textures/effects/white_vignette.png");
+
     public PositionedSoundInstance chaseTheme;
     public PositionedSoundInstance horrorSound;
     public PositionedSoundInstance nightAmbience;
 
+    private boolean isChased = false;
     private boolean didChase = false;
 
     public ModClientEvents() {
-        this.chaseTheme = PositionedSoundInstance.master(ModSounds.MAN_CHASE,1f, 0.2f);
-        this.horrorSound = PositionedSoundInstance.master(ModSounds.HORROR,1f,0.25f);
+        this.chaseTheme = PositionedSoundInstance.master(ModSounds.MAN_CHASE,1f, 1.4f);
+        this.horrorSound = PositionedSoundInstance.master(ModSounds.HORROR,1f,1.1f);
         this.nightAmbience = PositionedSoundInstance.master(ModSounds.NIGHT_AMBIENCE,1f,0.15f);
     }
 
@@ -51,10 +61,12 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
 
     public void cameraTick(MinecraftClient client, TheManEntity theMan) {
         if (client.world == null) {
+            this.isChased = false;
             return;
         }
 
         if (client.player == null) {
+            this.isChased = false;
             return;
         }
 
@@ -119,28 +131,26 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
 
             TheManEntity theMan = theManEntities.get(0);
 
+            this.isChased = theMan.getState() == TheManState.CHASE && theMan.isInRange(client.player, TheManEntity.MAN_CHASE_DISTANCE);
+
             this.cameraTick(client,theMan);
+        } else {
+            this.isChased = false;
+        }
 
-            if (theMan.getState() == TheManState.CHASE && theMan.isInRange(client.player, TheManEntity.MAN_CHASE_DISTANCE)) {
-                if (!this.didChase && !soundManager.isPlaying(this.horrorSound)) {
-                    this.didChase = true;
-                    soundManager.play(this.horrorSound);
-                }
-
-                if (!soundManager.isPlaying(this.chaseTheme)) {
-                    soundManager.play(this.chaseTheme);
-                }
-            } else {
-                if (this.didChase) {
-                    this.didChase = false;
-                }
-                if (soundManager.isPlaying(this.chaseTheme)) {
-                    soundManager.stop(this.chaseTheme);
-                }
+        if (this.isChased) {
+            if (!this.didChase && !soundManager.isPlaying(this.horrorSound)) {
+                this.didChase = true;
+                soundManager.play(this.horrorSound);
             }
 
+            if (!soundManager.isPlaying(this.chaseTheme)) {
+                soundManager.play(this.chaseTheme);
+            }
         } else {
-
+            if (this.didChase) {
+                this.didChase = false;
+            }
             if (soundManager.isPlaying(this.chaseTheme)) {
                 soundManager.stop(this.chaseTheme);
             }

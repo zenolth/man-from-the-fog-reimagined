@@ -1,4 +1,9 @@
-- Added new status effect : Paranoia
-  - Given to players after The Man kills someone in his Chase state
-- Removed the Minecraft and Edition logo replacement
-- Added Russian translations by [Korben](https://github.com/mpustovoi)
+- Fixed The Man trying to walk through fences
+- Made climbing work a little better (may still slip off a wall when climbing)
+- New chase theme
+- Now there's a sound effect when The Man starts a chase
+- Fixed The Man paranoia entity not having translation
+- Fixed Paranoia entities being visible to everyone
+- Added a new gamerule : `manShouldBreakLightSources`
+- Fixed some gamerules not having translations
+- Changed the way how The Man's spawn location is determined

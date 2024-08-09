@@ -72,14 +72,35 @@ public class Util {
      */
     public static Vec3d getRandomSpawnBehindDirection(ServerWorld serverWorld, Random random, Vec3d origin, Vec3d direction, int minRange, int maxRange) {
         direction = direction.multiply(-1);
+        direction = direction.rotateY((float) Math.toRadians((random.nextFloat(-60,60))));
         if (minRange == maxRange) {
             direction = direction.multiply(minRange);
         } else {
             direction = direction.multiply(maxRange > minRange ? random.nextInt(minRange,maxRange) : random.nextInt(maxRange,minRange));
         }
-        direction = direction.rotateY((float) Math.toRadians((random.nextFloat(-60,60))));
 
-        return serverWorld.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,BlockPos.ofFloored(origin.add(direction))).up().toCenterPos();
+        BlockPos blockPos = BlockPos.ofFloored(origin.add(direction));
+        BlockState blockState = serverWorld.getBlockState(blockPos);
+
+        while (!blockState.isAir()) {
+            blockPos = blockPos.up();
+            blockState = serverWorld.getBlockState(blockPos);
+            if (blockPos.getY() >= serverWorld.getTopY()) {
+                break;
+            }
+        }
+
+        BlockState blockStateDown = serverWorld.getBlockState(blockPos.down());
+
+        while (blockStateDown.isAir()) {
+            blockPos = blockPos.down();
+            blockStateDown = serverWorld.getBlockState(blockPos.down());
+            if (blockPos.getY() < serverWorld.getBottomY()) {
+                break;
+            }
+        }
+
+        return blockPos.toCenterPos();
     }
 
     /**

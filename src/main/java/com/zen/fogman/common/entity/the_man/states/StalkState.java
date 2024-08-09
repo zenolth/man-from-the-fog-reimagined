@@ -23,6 +23,6 @@ public class StalkState extends AbstractState {
         }
 
         this.mob.getLookControl().lookAt(target,30f,30f);
-        this.mob.moveTo(target.getPos().subtract(Util.getRotationVector(0f,target.getYaw(1.0f))),0.8);
+        this.mob.moveTo(target.getPos(),0.8);
     }
 }
