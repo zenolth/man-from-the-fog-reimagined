@@ -8,6 +8,9 @@
   "entity.the_fog_is_coming.the_man": "§kГромобой§r",
   "entity.the_fog_is_coming.the_man_hallucination": "§kГромобой§r",
 
+  "effect.the_fog_is_coming.paranoia": "Паранойя",
+  "effect.the_fog_is_coming.paranoia.description": "Накладывается после того, как §kГромобой§r убьёт кого-то после погони.",
+
   "subtitles.the_fog_is_coming.man_alarm": "§kГромобой§r настораживает",
   "subtitles.the_fog_is_coming.man_pain": "§kГромобой§r ранен",
   "subtitles.the_fog_is_coming.man_attack": "§kГромобой§r нападает",

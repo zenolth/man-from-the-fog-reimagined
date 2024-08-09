@@ -11,6 +11,7 @@
   "entity.the_fog_is_coming.the_man_paranoia": "The Man?",
 
   "effect.the_fog_is_coming.paranoia": "Paranoia",
+  "effect.the_fog_is_coming.paranoia.description": "Given to players after §kThe Man§r kills someone in his chase state.",
 
   "subtitles.the_fog_is_coming.man_alarm": "§kThe Man§r alarms",
   "subtitles.the_fog_is_coming.man_pain": "§kThe Man§r hurts",
@@ -35,7 +36,7 @@
 
   "gamerule.manMinSpawnRange": "The Man's minimal spawning range",
   "gamerule.manMaxSpawnRange": "The Man's maximum spawning range",
-
+  
   "gamerule.manShouldBreakGlass": "Is The Man allowed to break glass",
   "gamerule.manShouldBreakLightSources": "Is The Man allowed to break light sources"
 }
