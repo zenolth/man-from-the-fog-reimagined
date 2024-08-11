@@ -1,3 +1,4 @@
-- Fixed The Man's nbt data not being loaded (specifically ManState)
-- Added a shield to The Man, this "shield" has health (specifically 50) and it doesn't regenerate after it gets broken, there's a sound indicating that it broke
-- Added a Camera shake effect when close to The Man
+- Added German translations by [SpaceReii](https://github.com/SpvceR3ii)
+- Added contributors to fabric.mod.json (sorry contributors I forgot to add you guys earlier)
+- English translations fixed by [Korben](https://github.com/mpustovoi)
+- Russian translations updated by [Korben](https://github.com/mpustovoi)
