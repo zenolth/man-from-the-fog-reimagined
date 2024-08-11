@@ -7,6 +7,20 @@
 	"authors": [
 		"Zen"
 	],
+	"contributors": [
+		{
+			"name": "Korben",
+			"contact": {
+				"homepage": "https://github.com/mpustovoi"
+			}
+		},
+		{
+			"name": "Santiago Hernandez",
+			"contact": {
+				"homepage": "https://github.com/TheLegendofSaram"
+			}
+		}
+	],
 	"contact": {
 		"homepage": "https://modrinth.com/mod/man-from-the-fog-reimagined",
 		"sources": "https://github.com/z3n01d/man-from-the-fog-reimagined",
