@@ -1,0 +1,44 @@
+{
+  "block.the_fog_is_coming.bleeding_obsidian": "Blutender Obsidian",
+  "block.the_fog_is_coming.enshrouded_portal": "Eingehüllt Portal",
+
+  "item.the_fog_is_coming.tear_of_the_man": "Träne von §kDer Mann§r",
+  "item.the_fog_is_coming.fogman_spawn_egg": "§kDer Mann§r Laichen Ei",
+  "item.the_fog_is_coming.mans_claws": "Der Mann's Krallen",
+
+  "entity.the_fog_is_coming.the_man": "§kDer Mann§r",
+  "entity.the_fog_is_coming.the_man_hallucination": "§kDer Mann§r",
+  "entity.the_fog_is_coming.the_man_paranoia": "Der Mann?",
+
+  "effect.the_fog_is_coming.paranoia": "Paranoia",
+  "effect.the_fog_is_coming.paranoia.description": "Wird den Spielern gegeben nach §kDer Mann§r tötet jemanden in seinem Verfolgungsstaat.",
+
+  "subtitles.the_fog_is_coming.man_alarm": "§kDer Mann§r alarms",
+  "subtitles.the_fog_is_coming.man_pain": "§kDer Mann§r tut weh",
+  "subtitles.the_fog_is_coming.man_attack": "§kDer Mann§r Angriffe",
+  "subtitles.the_fog_is_coming.man_spit": "§Der Mann§r spuckt Säure",
+  "subtitles.the_fog_is_coming.man_slash": "§kDer Mann§r Schrägstriche",
+  "subtitles.the_fog_is_coming.man_spot": "§kDer Mann§r entdeckt jemanden",
+  "subtitles.the_fog_is_coming.man_idlecalm": "§kDer Mann§r knurrt",
+  "subtitles.the_fog_is_coming.man_death": "§kDer Mann§r stirbt",
+  "subtitles.the_fog_is_coming.man_lunge": "§kDer Mann§r Ausfallschritte",
+  "subtitles.the_fog_is_coming.man_creepy": "...",
+
+  "subtitles.the_fog_is_coming.shield_break": "§kThe Man§r's Schild bricht",
+
+  "gamerule.manSpawnChanceScales": "Sollte die Spawn-Chance des Mannes abhängig von der Anzahl der Spieler skalieren?",
+  "gamerule.manSpawnChance": "Die Spawn-Chance des Mannes",
+  "gamerule.manAmbientSoundChance": "Chance, einen Sound abzuspielen, anstatt Der Mann herauszubringen.",
+  "gamerule.manSpawnCooldown": "Zeit zwischen den Spawn-Möglichkeiten des Mannes",
+
+  "gamerule.manCanSpawnInDay": "Sollte der Mann erscheinen, wenn es Tag ist?",
+
+  "gamerule.manShouldGiveDarknessEffect": "Sollte der Mann Spielern in der Nähe den Dunkelheitseffekt verleihen?",
+  "gamerule.manShouldGiveSpeedEffect": "Sollte der Mann nahen Spielern einen Geschwindigkeitseffekt verleihen?",
+
+  "gamerule.manMinSpawnRange": "Die minimale Spawn-Reichweite des Mannes",
+  "gamerule.manMaxSpawnRange": "Die maximale Spawn-Reichweite des Mannes",
+  
+  "gamerule.manShouldBreakGlass": "Darf der Mann Glas zerschlagen?",
+  "gamerule.manShouldBreakLightSources": "Ist es dem Mann erlaubt, Lichtquellen zu zerstören?"
+}
