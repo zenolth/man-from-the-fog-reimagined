@@ -7,6 +7,7 @@
 		"MobNavigationMixin"
 	],
 	"client": [
+
 	],
 	"injectors": {
 		"defaultRequire": 1

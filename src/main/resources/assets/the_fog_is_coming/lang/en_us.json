@@ -24,6 +24,8 @@
   "subtitles.the_fog_is_coming.man_lunge": "§kThe Man§r lunges",
   "subtitles.the_fog_is_coming.man_creepy": "...",
 
+  "subtitles.the_fog_is_coming.shield_break": "§KThe Man§r's shield breaks",
+
   "gamerule.manSpawnChanceScales": "Should The Man's spawn chance scale by amount of players",
   "gamerule.manSpawnChance": "The Man's spawn chance",
   "gamerule.manAmbientSoundChance": "Chance to play a sound instead of spawning The Man",

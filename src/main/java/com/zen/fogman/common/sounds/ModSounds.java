@@ -10,6 +10,7 @@ public class ModSounds {
     public static SoundEvent NIGHT_AMBIENCE = registerSound("night_ambience");
 
     public static SoundEvent HORROR = registerSound("horror");
+    public static SoundEvent SHIELD_BREAK = registerSound("shield_break");
 
     public static SoundEvent MAN_ALARM = registerSound("man_alarm");
     public static SoundEvent MAN_PAIN = registerSound("man_pain");

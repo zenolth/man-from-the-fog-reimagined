@@ -103,6 +103,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     /* NBT data names */
     public static final String MAN_STATE_NBT = "ManState";
     public static final String MAN_ALIVE_TICKS_NBT = "ManAliveTicks";
+    public static final String MAN_SHIELD_HEALTH_NBT = "ManShieldHealth";
 
     // Animation cache stuff
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
@@ -133,8 +134,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.stateManager = new StateManager(this);
 
         this.setStepHeight(1.0f);
-        this.setNoGravity(false);
-        this.noClip = false;
 
         this.addStatusEffects();
         this.initStates();
@@ -145,23 +144,31 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public void onSpawn(ServerWorld serverWorld) {
         this.setNoGravity(false);
-        this.setNoDrag(false);
+        this.noClip = false;
+
         if (!this.isHallucination()) {
-            if (this.getTarget() != null) {
-                BlockHitResult hitResult = serverWorld.raycast(new BlockStateRaycastContext(this.getEyePos(),this.getTarget().getEyePos(),TheManPredicates.BLOCK_STATE_PREDICATE));
-                if (hitResult.getType() == HitResult.Type.MISS) {
-                    this.setState(TheManState.STARE);
-                } else {
-                    this.setState(TheManState.STALK);
-                }
+
+            NbtCompound nbtCompound = this.writeNbt(new NbtCompound());
+
+            if (nbtCompound.contains(MAN_STATE_NBT)) {
+                this.setState(TheManState.values()[nbtCompound.getInt(MAN_STATE_NBT)]);
             } else {
-                switch (this.getRandom().nextBetween(0,2)) {
-                    case 0:
+                if (this.getTarget() != null) {
+                    BlockHitResult hitResult = serverWorld.raycast(new BlockStateRaycastContext(this.getEyePos(), this.getTarget().getEyePos(), TheManPredicates.BLOCK_STATE_PREDICATE));
+                    if (hitResult.getType() == HitResult.Type.MISS) {
                         this.setState(TheManState.STARE);
-                        break;
-                    case 1:
+                    } else {
                         this.setState(TheManState.STALK);
-                        break;
+                    }
+                } else {
+                    switch (this.getRandom().nextBetween(0, 2)) {
+                        case 0:
+                            this.setState(TheManState.STARE);
+                            break;
+                        case 1:
+                            this.setState(TheManState.STALK);
+                            break;
+                    }
                 }
             }
         } else {
@@ -198,7 +205,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         SpiderNavigation mobNavigation = new SpiderNavigation(this,world);
 
         mobNavigation.setCanSwim(true);
-        mobNavigation.setRangeMultiplier(4);
 
         return mobNavigation;
     }
@@ -243,11 +249,37 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     @Override
     protected void initDataTracker() {
         super.initDataTracker();
+
+        this.getDataTracker().startTracking(TheManDataTrackers.SHIELD_HEALTH, 50f);
         this.getDataTracker().startTracking(TheManDataTrackers.CLIMBING,false);
         this.getDataTracker().startTracking(TheManDataTrackers.CROUCHING,false);
         this.getDataTracker().startTracking(TheManDataTrackers.CRAWLING,false);
         this.getDataTracker().startTracking(TheManDataTrackers.STATE,TheManState.STARE.ordinal());
         this.getDataTracker().startTracking(TheManDataTrackers.IS_LUNGING,false);
+    }
+
+    public void setShieldHealth(float shieldHealth) {
+        this.getDataTracker().set(TheManDataTrackers.SHIELD_HEALTH,shieldHealth);
+    }
+
+    public float getShieldHealth() {
+        return this.getDataTracker().get(TheManDataTrackers.SHIELD_HEALTH);
+    }
+
+    public void damageShield(float damage) {
+        if (!this.hasShield()) {
+            return;
+        }
+
+        if (this.getShieldHealth() - damage <= 0) {
+            this.playShieldBreakSound();
+        }
+
+        this.setShieldHealth(Math.max(0f,this.getShieldHealth() - damage));
+    }
+
+    public boolean hasShield() {
+        return this.getShieldHealth() > 0;
     }
 
     public void setClimbing(boolean climbing) {
@@ -328,6 +360,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         super.writeCustomDataToNbt(nbt);
         nbt.putInt(MAN_STATE_NBT,this.getState().ordinal());
         nbt.putLong(MAN_ALIVE_TICKS_NBT,this.aliveTicks);
+        nbt.putFloat(MAN_SHIELD_HEALTH_NBT,this.getShieldHealth());
     }
 
     @Override
@@ -338,6 +371,9 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
         if (nbt.contains(MAN_ALIVE_TICKS_NBT)) {
             this.aliveTicks = nbt.getLong(MAN_ALIVE_TICKS_NBT);
+        }
+        if (nbt.contains(MAN_SHIELD_HEALTH_NBT)) {
+            this.setShieldHealth(nbt.getFloat(MAN_SHIELD_HEALTH_NBT));
         }
     }
 
@@ -410,6 +446,10 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public void playLungeAttackSound() {
         this.playSound(ModSounds.MAN_LUNGE_ATTACK,this.getLoudSoundVolume(),this.getSoundPitch());
+    }
+
+    public void playShieldBreakSound() {
+        this.playSound(ModSounds.SHIELD_BREAK,this.getLoudSoundVolume(),1f);
     }
 
     @Override
@@ -580,6 +620,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     @Override
+    public void kill() {
+        this.despawn();
+    }
+
+    @Override
     public boolean damage(DamageSource source, float amount) {
         if (source.getTypeRegistryEntry() == DamageTypes.IN_WALL) {
             return false;
@@ -588,6 +633,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         if (this.getState() == TheManState.STARE || this.getState() == TheManState.STALK) {
             this.blockDamage(source);
             return false;
+        }
+
+        if (this.hasShield()) {
+            this.damageShield(amount);
+            return true;
         }
 
         if (source.getName().contains("bullet")) {

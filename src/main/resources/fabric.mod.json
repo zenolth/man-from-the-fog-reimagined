@@ -26,8 +26,17 @@
 			"com.zen.fogman.ManFromTheFogDataGenerator"
 		]
 	},
+	"custom": {
+		"loom:injected_interfaces": {
+			"net/minecraft/client/network/ClientPlayerEntity": ["com/zen/fogman/client/mixin_interfaces/ClientPlayerEntityInterface"]
+		}
+	},
 	"mixins": [
-		"man-from-the-fog.mixins.json"
+		"man-from-the-fog.mixins.json",
+		{
+			"config": "man-from-the-fog-client.mixins.json",
+			"environment": "client"
+		}
 	],
 	"depends": {
 		"fabricloader": ">=0.15.11",

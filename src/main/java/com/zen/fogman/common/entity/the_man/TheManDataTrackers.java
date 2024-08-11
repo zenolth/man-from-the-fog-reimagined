@@ -7,6 +7,7 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import javax.sound.midi.Track;
 
 public class TheManDataTrackers {
+    public static final TrackedData<Float> SHIELD_HEALTH = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.FLOAT);
     public static final TrackedData<Boolean> CLIMBING = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     public static final TrackedData<Boolean> CROUCHING = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     public static final TrackedData<Boolean> CRAWLING = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);

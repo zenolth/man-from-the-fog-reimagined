@@ -1,7 +1,8 @@
 package com.zen.fogman.client.events;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.systems.VertexSorter;
+import com.zen.fogman.client.mixin_interfaces.ClientPlayerEntityInterface;
 import com.zen.fogman.common.ManFromTheFog;
 import com.zen.fogman.common.entity.ModEntities;
 import com.zen.fogman.common.entity.the_man.TheManEntity;
@@ -12,20 +13,19 @@ import com.zen.fogman.common.sounds.ModSounds;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.sound.SoundManager;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockStateRaycastContext;
+import org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter;
 import org.joml.Matrix4f;
 
 import java.util.List;
@@ -133,6 +133,10 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
 
             this.isChased = theMan.getState() == TheManState.CHASE && theMan.isInRange(client.player, TheManEntity.MAN_CHASE_DISTANCE);
 
+            if (this.isChased) {
+                ((ClientPlayerEntityInterface) client.player).the_fog_is_coming$setGlitchMultiplier(Math.max(0f,Math.min(1f,1f - (client.player.distanceTo(theMan) / 20f))));
+            }
+
             this.cameraTick(client,theMan);
         } else {
             this.isChased = false;
@@ -151,6 +155,7 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
             if (this.didChase) {
                 this.didChase = false;
             }
+            ((ClientPlayerEntityInterface) client.player).the_fog_is_coming$setGlitchMultiplier(0f);
             if (soundManager.isPlaying(this.chaseTheme)) {
                 soundManager.stop(this.chaseTheme);
             }

@@ -116,5 +116,12 @@
       "the_fog_is_coming:horror/horror2",
       "the_fog_is_coming:horror/horror3"
     ]
+  },
+
+  "shield_break": {
+    "subtitle": "subtitles.the_fog_is_coming.shield_break",
+    "sounds": [
+      "the_fog_is_coming:mansounds/shield_break"
+    ]
   }
 }

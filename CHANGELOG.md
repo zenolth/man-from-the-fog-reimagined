@@ -1,9 +1,3 @@
-- Fixed The Man trying to walk through fences
-- Made climbing work a little better (may still slip off a wall when climbing)
-- New chase theme
-- Now there's a sound effect when The Man starts a chase
-- Fixed The Man paranoia entity not having translation
-- Fixed Paranoia entities being visible to everyone
-- Added a new gamerule : `manShouldBreakLightSources`
-- Fixed some gamerules not having translations
-- Changed the way how The Man's spawn location is determined
+- Fixed The Man's nbt data not being loaded (specifically ManState)
+- Added a shield to The Man, this "shield" has health (specifically 50) and it doesn't regenerate after it gets broken, there's a sound indicating that it broke
+- Added a Camera shake effect when close to The Man
