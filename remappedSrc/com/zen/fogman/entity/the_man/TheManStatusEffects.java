@@ -1,6 +1,6 @@
-package com.zen.fogman.common.entity.the_man;
+package com.zen.the_fog.common.entity.the_man;
 
-import com.zen.fogman.common.other.MathUtils;
+import com.zen.the_fog.common.other.MathUtils;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 

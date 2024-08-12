@@ -1,11 +1,11 @@
-package com.zen.fogman.common.server;
+package com.zen.the_fog.common.server;
 
-import com.zen.fogman.common.entity.ModEntities;
-import com.zen.fogman.common.entity.the_man.TheManEntity;
-import com.zen.fogman.common.entity.the_man.TheManUtils;
-import com.zen.fogman.common.gamerules.ModGamerules;
-import com.zen.fogman.common.other.MathUtils;
-import com.zen.fogman.common.sounds.ModSounds;
+import com.zen.the_fog.common.entity.ModEntities;
+import com.zen.the_fog.common.entity.the_man.TheManEntity;
+import com.zen.the_fog.common.entity.the_man.TheManUtils;
+import com.zen.the_fog.common.gamerules.ModGamerules;
+import com.zen.the_fog.common.other.MathUtils;
+import com.zen.the_fog.common.sounds.ModSounds;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.minecraft.server.MinecraftServer;

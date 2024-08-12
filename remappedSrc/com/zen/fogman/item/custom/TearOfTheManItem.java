@@ -1,4 +1,4 @@
-package com.zen.fogman.common.item.custom;
+package com.zen.the_fog.common.item.custom;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;

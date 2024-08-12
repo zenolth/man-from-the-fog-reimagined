@@ -1,8 +1,8 @@
-package com.zen.fogman.common.item;
+package com.zen.the_fog.common.item;
 
-import com.zen.fogman.ManFromTheFog;
-import com.zen.fogman.common.entity.ModEntities;
-import com.zen.fogman.common.item.custom.TearOfTheManItem;
+import com.zen.the_fog.ManFromTheFog;
+import com.zen.the_fog.common.entity.ModEntities;
+import com.zen.the_fog.common.item.custom.TearOfTheManItem;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroupEntries;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;

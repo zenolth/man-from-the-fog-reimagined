@@ -1,6 +1,6 @@
-package com.zen.fogman.common.entity.the_man;
+package com.zen.the_fog.common.entity.the_man;
 
-import com.zen.fogman.common.entity.ModEntities;
+import com.zen.the_fog.common.entity.ModEntities;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LightningEntity;

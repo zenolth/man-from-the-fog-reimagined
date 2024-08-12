@@ -37,18 +37,18 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-          "com.zen.fogman.common.ManFromTheFog"
+          "com.zen.the_fog.common.ManFromTheFog"
 		],
 		"client": [
-			"com.zen.fogman.client.ManFromTheFogClient"
+			"com.zen.the_fog.client.ManFromTheFogClient"
 		],
 		"fabric-datagen": [
-			"com.zen.fogman.ManFromTheFogDataGenerator"
+			"com.zen.the_fog.ManFromTheFogDataGenerator"
 		]
 	},
 	"custom": {
 		"loom:injected_interfaces": {
-			"net/minecraft/client/network/ClientPlayerEntity": ["com/zen/fogman/client/mixin_interfaces/ClientPlayerEntityInterface"]
+			"net/minecraft/client/network/ClientPlayerEntity": ["com/zen/the_fog/client/mixin_interfaces/ClientPlayerEntityInterface"]
 		}
 	},
 	"mixins": [
