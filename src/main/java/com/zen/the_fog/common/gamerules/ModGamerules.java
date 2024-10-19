@@ -22,6 +22,8 @@ public class ModGamerules {
 
     public static final GameRules.Key<GameRules.BooleanRule> MAN_SHOULD_BREAK_GLASS = createRule("manShouldBreakGlass", GameRules.Category.MOBS, false);
     public static final GameRules.Key<GameRules.BooleanRule> MAN_SHOULD_BREAK_LIGHT_SOURCES = createRule("manShouldBreakLightSources", GameRules.Category.MOBS, false);
+    public static final GameRules.Key<GameRules.BooleanRule> MAN_SHOULD_HUNGER_BE_CAPPED = createRule("manShouldHungerBeCapped", GameRules.Category.PLAYER, true);
+
     //  HELPER FUNCTIONS
     // Double rules
     public static GameRules.Key<DoubleRule> createRule(String name,GameRules.Category category,double value) {

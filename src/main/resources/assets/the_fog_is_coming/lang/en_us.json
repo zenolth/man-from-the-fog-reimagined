@@ -40,5 +40,7 @@
   "gamerule.manMaxSpawnRange": "The Man's maximum spawning range",
   
   "gamerule.manShouldBreakGlass": "Is The Man allowed to break glass",
-  "gamerule.manShouldBreakLightSources": "Is The Man allowed to break light sources"
+  "gamerule.manShouldBreakLightSources": "Is The Man allowed to break light sources",
+
+  "gamerule.manShouldHungerBeCapped": "Should Player's hunger be capped at 8 when chased"
 }

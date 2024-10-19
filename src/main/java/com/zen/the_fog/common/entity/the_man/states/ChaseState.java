@@ -6,8 +6,10 @@ import com.zen.the_fog.common.entity.the_man.TheManStatusEffects;
 import com.zen.the_fog.common.gamerules.ModGamerules;
 import com.zen.the_fog.common.other.Util;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.HungerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.world.GameRules;
 
 public class ChaseState extends AbstractState {
 
@@ -71,15 +73,26 @@ public class ChaseState extends AbstractState {
             }
         }
 
-        for (ServerPlayerEntity player : serverWorld.getPlayers(TheManPredicates.TARGET_PREDICATE)) {
-            if (player.isInRange(this.mob, TheManEntity.MAN_CHASE_DISTANCE)) {
-                if (player.isSleeping()) {
-                    player.wakeUp();
-                }
+        GameRules gameRules = serverWorld.getGameRules();
 
-                player.getHungerManager().add(1,1);
-                player.setSprinting(true);
+        if (gameRules.getBoolean(ModGamerules.MAN_SHOULD_HUNGER_BE_CAPPED)) {
+
+            for (ServerPlayerEntity player : serverWorld.getPlayers(TheManPredicates.TARGET_PREDICATE)) {
+                if (player.isInRange(this.mob, TheManEntity.MAN_CHASE_DISTANCE)) {
+                    if (player.isSleeping()) {
+                        player.wakeUp();
+                    }
+
+                    HungerManager hungerManager = player.getHungerManager();
+
+                    if (hungerManager.getFoodLevel() < 8) {
+                        hungerManager.setFoodLevel(8);
+                    }
+
+                    player.setSprinting(true);
+                }
             }
+
         }
 
         this.mob.attack(target);

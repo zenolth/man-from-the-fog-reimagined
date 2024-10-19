@@ -42,6 +42,11 @@ public class Util {
         return a.distanceTo(b);
     }
 
+    public static float lerp(float a, float b, float f)
+    {
+        return (float) (a * (1.0 - f) + (b * f));
+    }
+
     public static boolean isDay(World world) {
         world.calculateAmbientDarkness();
         return world.getAmbientDarkness() < 4;

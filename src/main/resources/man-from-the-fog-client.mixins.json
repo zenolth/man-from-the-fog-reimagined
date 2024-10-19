@@ -5,8 +5,10 @@
   "mixins": [
   ],
   "client": [
+    "BackgroundRendererMixin",
+    "ClientPlayerEntityMixin",
     "GameRendererMixin",
-    "ClientPlayerEntityMixin"
+    "OverworldEffectMixin"
   ],
   "injectors": {
     "defaultRequire": 1

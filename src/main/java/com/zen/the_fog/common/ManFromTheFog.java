@@ -12,11 +12,14 @@ import com.zen.the_fog.common.sounds.ModSounds;
 import com.zen.the_fog.common.status_effects.ModStatusEffects;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
+import net.fabricmc.fabric.api.biome.v1.ModificationPhase;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.kyrptonaught.customportalapi.api.CustomPortalBuilder;
+import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +42,13 @@ public class ManFromTheFog implements ModInitializer {
 		ModItems.register();
 		ModParticles.register();
 		ModEntities.register();
+
+		/*BiomeModifications.create(new Identifier(MOD_ID,"setfog")).add(ModificationPhase.POST_PROCESSING,
+				(context) -> true,
+				ctx -> {
+					ctx.getEffects().setFogColor(Colors.BLACK);
+				}
+		);*/
 
 		CustomPortalBuilder.beginPortal()
 				.frameBlock(ModBlocks.BLEEDING_OBSIDIAN)

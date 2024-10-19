@@ -89,6 +89,7 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
 
     @Override
     public void onWorldLoad(MinecraftServer server, ServerWorld serverWorld) {
+
         if (serverWorld.getRegistryKey() != World.OVERWORLD) {
             return;
         }

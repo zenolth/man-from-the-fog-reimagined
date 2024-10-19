@@ -65,7 +65,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public static final double MAN_SPEED = 0.48;
     public static final double MAN_CLIMB_SPEED = 0.7;
-    public static final double MAN_MAX_SCAN_DISTANCE = 10000.0;
     public static final double MAN_BLOCK_CHANCE = 0.25;
     public static final int MAN_CHASE_DISTANCE = 200;
 
@@ -214,8 +213,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED,MAN_SPEED)
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE,5.5)
                 .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK,3.5)
-                .add(EntityAttributes.GENERIC_ATTACK_SPEED,0.35)
-                .add(EntityAttributes.GENERIC_FOLLOW_RANGE,MAN_MAX_SCAN_DISTANCE)
+                .add(EntityAttributes.GENERIC_ATTACK_SPEED,1.3)
+                .add(EntityAttributes.GENERIC_FOLLOW_RANGE,MAN_CHASE_DISTANCE * 2)
                 .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE,100)
                 .add(EntityAttributes.GENERIC_ARMOR,7)
                 .add(EntityAttributes.GENERIC_ARMOR_TOUGHNESS,5);
@@ -788,7 +787,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         ServerWorld serverWorld = this.getServerWorld();
         LivingEntity target = this.getTarget();
 
-        this.breakBlocksInWay(serverWorld,target);
+        //this.breakBlocksInWay(serverWorld,target);
 
         for (BlockPos blockPos : BlockPos.iterateOutwards(this.getBlockPos().up(), 1, 1, 1)) {
             BlockState blockState = serverWorld.getBlockState(blockPos);
@@ -999,7 +998,22 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     @Nullable
     @Override
     public LivingEntity getTarget() {
-        LivingEntity target = this.getServerWorld().getClosestPlayer(this.getX(),this.getY(),this.getZ(),MAN_MAX_SCAN_DISTANCE,TheManPredicates.TARGET_PREDICATE);
+        double closestDistance = -1.0;
+        LivingEntity target = null;
+
+        for (LivingEntity entity : this.getWorld().getPlayers()) {
+            if (!TheManPredicates.TARGET_PREDICATE.test(entity)) {
+                continue;
+            }
+
+            double distance = entity.squaredDistanceTo(this.getX(),this.getY(),this.getZ());
+
+            if (closestDistance == -1.0 || distance < closestDistance) {
+                closestDistance = distance;
+                target = entity;
+            }
+        }
+
         this.setTarget(target);
         return target;
     }

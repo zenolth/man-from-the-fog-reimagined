@@ -51,6 +51,10 @@ public class TheManPredicates {
             return false;
         }
 
+        if (block instanceof FenceBlock || block instanceof FenceGateBlock || block instanceof SlabBlock || block instanceof StairsBlock) {
+            return true;
+        }
+
         return !blockState.isAir() && blockState.isFullCube(serverWorld,blockPos);
     };
 }
