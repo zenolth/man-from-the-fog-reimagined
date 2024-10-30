@@ -4,17 +4,24 @@ import com.zen.the_fog.client.mixin_interfaces.ClientPlayerEntityInterface;
 import com.zen.the_fog.common.ManFromTheFog;
 import com.zen.the_fog.common.entity.ModEntities;
 import com.zen.the_fog.common.entity.the_man.TheManEntity;
+import com.zen.the_fog.common.entity.the_man.TheManPackets;
 import com.zen.the_fog.common.entity.the_man.TheManPredicates;
 import com.zen.the_fog.common.entity.the_man.TheManState;
 import com.zen.the_fog.common.other.Util;
 import com.zen.the_fog.common.sounds.ModSounds;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.client.sound.*;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
@@ -28,7 +35,7 @@ import org.joml.Matrix4f;
 import java.util.List;
 
 @Environment(EnvType.CLIENT)
-public class ModClientEvents implements ClientTickEvents.EndTick {
+public class ModClientEvents implements ClientTickEvents.EndTick, ClientEntityEvents.Load {
 
     public static final double MAN_DETECT_RANGE = 1024;
 
@@ -47,7 +54,7 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
 
     public ModClientEvents() {
         this.chaseTheme = createMusicLoop(ModSounds.MAN_CHASE,1f, 1.4f);
-        this.horrorSound = PositionedSoundInstance.master(ModSounds.HORROR,1f,1.1f);
+        this.horrorSound = PositionedSoundInstance.master(ModSounds.HORROR,1f,0.8f);
         this.nightAmbience = PositionedSoundInstance.master(ModSounds.NIGHT_AMBIENCE,1f,0.15f);
     }
 
@@ -83,7 +90,7 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
         );
 
         if (result.getType() != HitResult.Type.MISS) {
-            theMan.updatePlayerLookedAt(client.player.getUuidAsString(),false);
+            theMan.updatePlayerLookedAt(false);
         } else {
             float fov = client.options.getFov().getValue() * client.player.getFovMultiplier();
 
@@ -97,7 +104,7 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
 
             Frustum frustum = new Frustum(viewMatrix,projectionMatrix);
 
-            theMan.updatePlayerLookedAt(client.player.getUuidAsString(),frustum.isVisible(theMan.getBoundingBox()));
+            theMan.updatePlayerLookedAt(frustum.isVisible(TheManEntity.HITBOX_SIZE.getBoxAt(theMan.getPos())));
         }
     }
 
@@ -135,7 +142,7 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
             this.isChased = theMan.getState() == TheManState.CHASE && theMan.isInRange(client.player, TheManEntity.MAN_CHASE_DISTANCE);
 
             if (this.isChased) {
-                ((ClientPlayerEntityInterface) client.player).the_fog_is_coming$setGlitchMultiplier(Math.max(0f,Math.min(1f,1f - (client.player.distanceTo(theMan) / 20f))));
+                client.player.the_fog_is_coming$setGlitchMultiplier(Math.max(0f,Math.min(1f,1f - (client.player.distanceTo(theMan) / 20f))));
             }
 
             this.cameraTick(client,theMan);
@@ -156,10 +163,17 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
             if (this.didChase) {
                 this.didChase = false;
             }
-            ((ClientPlayerEntityInterface) client.player).the_fog_is_coming$setGlitchMultiplier(0f);
+            client.player.the_fog_is_coming$setGlitchMultiplier(0f);
             if (soundManager.isPlaying(this.chaseTheme)) {
                 soundManager.stop(this.chaseTheme);
             }
+        }
+    }
+
+    @Override
+    public void onLoad(Entity entity, ClientWorld world) {
+        if (entity instanceof ClientPlayerEntity) {
+            ClientPlayNetworking.send(TheManPackets.UPDATE_FOG_DENSITY, PacketByteBufs.create());
         }
     }
 

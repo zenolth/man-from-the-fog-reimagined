@@ -4,6 +4,7 @@ import com.zen.the_fog.common.ManFromTheFog;
 import com.zen.the_fog.common.block.ModBlocks;
 import com.zen.the_fog.common.entity.ModEntities;
 import com.zen.the_fog.common.item.custom.ClawsItem;
+import com.zen.the_fog.common.item.custom.ErebusOrb;
 import com.zen.the_fog.common.item.custom.TearOfTheManItem;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroupEntries;
@@ -27,6 +28,10 @@ public class ModItems {
     ));
 
     public static final Item TEAR_OF_THE_MAN = registerItem("tear_of_the_man",new TearOfTheManItem(
+            new FabricItemSettings().maxCount(1).rarity(Rarity.EPIC).fireproof()
+    ));
+
+    public static final Item EREBUS_ORB = registerItem("erebus_orb", new ErebusOrb(
             new FabricItemSettings().maxCount(1).rarity(Rarity.EPIC).fireproof()
     ));
 
@@ -57,6 +62,11 @@ public class ModItems {
         entries.add(ModBlocks.BLEEDING_OBSIDIAN.asItem());
     }
 
+    private static void addItemsToFunctionalGroup(FabricItemGroupEntries entries) {
+        entries.add(EREBUS_ORB);
+        entries.add(ModBlocks.EREBUS_LANTERN.asItem());
+    }
+
     public static Item registerItem(String name, Item item) {
         return Registry.register(Registries.ITEM, new Identifier(ManFromTheFog.MOD_ID, name), item);
     }
@@ -66,6 +76,7 @@ public class ModItems {
 
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(ModItems::addItemsToIngredientItemsGroup);
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(ModItems::addItemsToCombatGroup);
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(ModItems::addItemsToFunctionalGroup);
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(ModItems::addItemsToSpawnEggsGroup);
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.NATURAL).register(ModItems::addItemsToNaturalGroup);
 

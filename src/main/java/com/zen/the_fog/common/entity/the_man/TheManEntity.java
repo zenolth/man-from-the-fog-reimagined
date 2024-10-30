@@ -1,14 +1,19 @@
 package com.zen.the_fog.common.entity.the_man;
 
+import com.zen.the_fog.common.block.ModBlocks;
+import com.zen.the_fog.common.components.ModComponents;
+import com.zen.the_fog.common.components.TheManHealthComponent;
 import com.zen.the_fog.common.damage_type.ModDamageTypes;
 import com.zen.the_fog.common.entity.ModEntities;
 import com.zen.the_fog.common.entity.the_man.states.*;
 import com.zen.the_fog.common.gamerules.ModGamerules;
 import com.zen.the_fog.common.item.ModItems;
+import com.zen.the_fog.common.mixin_interfaces.LookingAtManInterface;
 import com.zen.the_fog.common.other.Util;
 import com.zen.the_fog.common.sounds.ModSounds;
 import com.zen.the_fog.common.status_effects.ModStatusEffects;
 import com.zen.the_fog.common.world.dimension.ModDimensions;
+import dev.emi.trinkets.api.TrinketsApi;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -56,12 +61,13 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.List;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
     public static final EntityDimensions HITBOX_SIZE = EntityDimensions.fixed(0.8f, 2.3f);
     public static final EntityDimensions CROUCH_HITBOX_SIZE = EntityDimensions.fixed(0.8f, 1.3f);
     public static final EntityDimensions CRAWL_HITBOX_SIZE = EntityDimensions.fixed(0.8f, 0.8f);
+    public static final int REPELLENT_RANGE = 8;
 
     public static final double MAN_SPEED = 0.48;
     public static final double MAN_CLIMB_SPEED = 0.7;
@@ -113,6 +119,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     private long attackCooldown;
     // Alive ticks
     private long aliveTicks;
+    // Hitbox ticks
+    private long hitboxUpdateTicks = 10;
 
     // State manager
     private final StateManager stateManager;
@@ -120,8 +128,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     // Chances
     private double blockChance = MAN_BLOCK_CHANCE;
 
-    // Maps
-    public HashMap<String,Boolean> playersLookingMap = new HashMap<>();
+    private EntityDimensions currentHitboxSize = HITBOX_SIZE;
 
     public TheManEntity(EntityType<? extends TheManEntity> entityType, World world) {
         super(entityType,world);
@@ -209,7 +216,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     /* Attributes */
     public static DefaultAttributeContainer.Builder createManAttributes() {
         return TheManEntity.createHostileAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH,420)
+                .add(EntityAttributes.GENERIC_MAX_HEALTH,400)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED,MAN_SPEED)
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE,5.5)
                 .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK,3.5)
@@ -313,28 +320,25 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     @Environment(EnvType.CLIENT)
-    public void updatePlayerLookedAt(String uuid, boolean lookedAt) {
+    public void updatePlayerLookedAt(boolean lookedAt) {
         PacketByteBuf packet = PacketByteBufs.create();
-        packet.writeInt(this.getId());
-        packet.writeString(uuid);
         packet.writeBoolean(lookedAt);
         ClientPlayNetworking.send(TheManPackets.LOOKED_AT_PACKET_ID,packet);
     }
 
-    public void updatePlayerMap(String uuid, boolean value) {
-        this.playersLookingMap.put(uuid,value);
-    }
-
-    public void removePlayerFromMap(String uuid) {
-        if (!this.playersLookingMap.containsKey(uuid)) {
-            return;
-        }
-        this.playersLookingMap.remove(uuid);
-    }
-
     public boolean isLookedAt() {
-        for (boolean looking : this.playersLookingMap.values()) {
-            if (looking) {
+        if (this.getWorld().isClient()) return false;
+
+        double minRange = this.getServerWorld().getGameRules().get(ModGamerules.MAN_MIN_SPAWN_RANGE).get();
+        double maxRange = this.getServerWorld().getGameRules().get(ModGamerules.MAN_MAX_SPAWN_RANGE).get();
+
+        double lookRange = Math.max(minRange, maxRange);
+
+        List<ServerPlayerEntity> players = this.getServerWorld()
+                .getPlayers((player) -> Util.getFlatDistance(this.getPos(),player.getPos()) <= lookRange && TheManPredicates.TARGET_PREDICATE.test(player));
+
+        for (ServerPlayerEntity player : players) {
+            if (((LookingAtManInterface) player).the_fog_is_coming$isLookingAtMan()) {
                 return true;
             }
         }
@@ -381,6 +385,18 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
 
         if (event.isMoving()) {
+            if (this.getState() == TheManState.STALK) {
+                return event.setAndContinue(TheManAnimations.SNEAK_RUN);
+            }
+
+            if (this.isCrawling()) {
+                return event.setAndContinue(TheManAnimations.CRAWL_RUN);
+            }
+
+            if (this.isCrouching()) {
+                return event.setAndContinue(TheManAnimations.CROUCH_RUN);
+            }
+
             return event.setAndContinue(TheManAnimations.RUN);
         }
 
@@ -622,8 +638,20 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     @Override
+    public void onDeath(DamageSource damageSource) {
+        if (this.getWorld().isClient()) return;
+
+        TheManHealthComponent healthComponent = ModComponents.THE_MAN_HEALTH.get(this.getServerWorld());
+
+        healthComponent.setValue((float) createManAttributes().build().getValue(EntityAttributes.GENERIC_MAX_HEALTH));
+
+        super.onDeath(damageSource);
+    }
+
+    @Override
     public boolean damage(DamageSource source, float amount) {
         if (source.getTypeRegistryEntry() == DamageTypes.IN_WALL) {
+            this.blockDamage(source);
             return false;
         }
 
@@ -643,9 +671,22 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
 
         if (Util.isNight(this.getWorld())) {
+
             Entity attacker = source.getAttacker();
 
             if (attacker instanceof LivingEntity livingEntity && !livingEntity.getMainHandStack().isOf(ModItems.CLAWS) && !this.isHallucination()) {
+
+                if (getRepellentAroundPosition(livingEntity.getBlockPos(),this.getWorld()) != null) {
+                    this.blockDamage(source);
+
+                    return false;
+                }
+
+                if (TrinketsApi.getTrinketComponent(livingEntity).isPresent() && TrinketsApi.getTrinketComponent(livingEntity).get().isEquipped(ModItems.EREBUS_ORB)) {
+                    this.blockDamage(source);
+
+                    return false;
+                }
 
                 if (attacker instanceof IronGolemEntity) {
                     this.blockDamage(source,amount * 2f);
@@ -681,6 +722,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void despawn() {
+        TheManHealthComponent healthComponent = ModComponents.THE_MAN_HEALTH.get(this.getServerWorld());
+        healthComponent.setValue(this.getHealth());
         TheManUtils.doLightning(this.getServerWorld(),this);
         this.discard();
     }
@@ -862,6 +905,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public boolean tryAttackTarget(Entity target) {
+        if (target instanceof LivingEntity livingEntity && getRepellentAroundPosition(livingEntity.getBlockPos(),this.getWorld()) != null) return false;
+
         float attackDamage = (float)this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         float attackKnockback = (float)this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_KNOCKBACK);
         if (target instanceof LivingEntity) {
@@ -876,9 +921,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         boolean damaged = target.damage(this.getDamageSources().create(ModDamageTypes.MAN_ATTACK_DAMAGE_TYPE,this), attackDamage);
         if (damaged) {
-            if (attackKnockback > 0.0F && target instanceof LivingEntity) {
-                ((LivingEntity)target)
-                        .takeKnockback(
+            if (attackKnockback > 0.0F && target instanceof LivingEntity livingEntity) {
+                livingEntity.takeKnockback(
                                 attackKnockback * 0.5F,
                                 MathHelper.sin(this.getYaw() * (float) (Math.PI / 180.0)),
                                 -MathHelper.cos(this.getYaw() * (float) (Math.PI / 180.0))
@@ -937,18 +981,23 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
     }
 
-    @Override
-    public EntityDimensions getDimensions(EntityPose pose) {
-
+    public void updateHitbox() {
         if (this.isCrouching()) {
-            return CROUCH_HITBOX_SIZE;
+            this.currentHitboxSize = CROUCH_HITBOX_SIZE;
+            return;
         }
 
         if (this.isCrawling()) {
-            return CRAWL_HITBOX_SIZE;
+            this.currentHitboxSize = CRAWL_HITBOX_SIZE;
+            return;
         }
 
-        return HITBOX_SIZE;
+        this.currentHitboxSize = HITBOX_SIZE;
+    }
+
+    @Override
+    public EntityDimensions getDimensions(EntityPose pose) {
+        return this.currentHitboxSize;
     }
 
     @Override
@@ -969,12 +1018,25 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void moveTo(double x, double y, double z, double speed) {
+        if (this.getWorld().isClient()) return;
+
+        BlockPos targetRepellentBlock = getRepellentAroundPosition(BlockPos.ofFloored(x,y,z),this.getServerWorld());
+        BlockPos manRepellentBlock = this.getRepellent();
+
+        if (targetRepellentBlock != null && manRepellentBlock != null) {
+            Vec3d direction = (new Vec3d(x,y,z)).subtract(targetRepellentBlock.toCenterPos()).normalize();
+            Vec3d moveToPos = targetRepellentBlock.toCenterPos().add(direction.multiply(REPELLENT_RANGE / 2.0));
+
+            this.moveControl.moveTo(moveToPos.getX(),moveToPos.getY(),moveToPos.getZ(),speed);
+            return;
+        }
+
         this.findPath(x, Math.min(y, this.getY()), z);
 
         if (this.path != null) {
             this.getNavigation().startMovingAlong(this.path,speed);
         } else {
-            this.getMoveControl().moveTo(x,y,z,speed);
+            this.moveControl.moveTo(x,y,z,speed);
         }
     }
 
@@ -1018,6 +1080,56 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         return target;
     }
 
+    @Nullable
+    public BlockPos getRepellent(int range) {
+        double closestDistance = -1.0;
+        BlockPos target = null;
+
+        for (BlockPos blockPos : BlockPos.iterateOutwards(this.getBlockPos(),REPELLENT_RANGE + range,REPELLENT_RANGE + range,REPELLENT_RANGE + range)) {
+            BlockState blockState = this.getServerWorld().getBlockState(blockPos);
+            if (!blockState.isOf(ModBlocks.EREBUS_LANTERN)) continue;
+
+            double distance = blockPos.toCenterPos().squaredDistanceTo(this.getX(),this.getY(),this.getZ());
+
+            if (closestDistance == -1.0 || distance < closestDistance) {
+                closestDistance = distance;
+                target = blockPos;
+            }
+        }
+
+        return target;
+    }
+
+    @Nullable
+    public BlockPos getRepellent() {
+        return this.getRepellent(0);
+    }
+
+    @Nullable
+    public static BlockPos getRepellentAroundPosition(BlockPos centerPos,WorldView world,int range) {
+        double closestDistance = -1.0;
+        BlockPos target = null;
+
+        for (BlockPos blockPos : BlockPos.iterateOutwards(centerPos,REPELLENT_RANGE + range,REPELLENT_RANGE + range,REPELLENT_RANGE + range)) {
+            BlockState blockState = world.getBlockState(blockPos);
+            if (!blockState.isOf(ModBlocks.EREBUS_LANTERN)) continue;
+
+            double distance = blockPos.toCenterPos().squaredDistanceTo(centerPos.toCenterPos());
+
+            if (closestDistance == -1.0 || distance < closestDistance) {
+                closestDistance = distance;
+                target = blockPos;
+            }
+        }
+
+        return target;
+    }
+
+    @Nullable
+    public static BlockPos getRepellentAroundPosition(BlockPos centerPos,WorldView world) {
+        return getRepellentAroundPosition(centerPos,world,0);
+    }
+
     /* Ticking */
     public ServerWorld getServerWorld() {
         if (this.getWorld().isClient()) {
@@ -1054,6 +1166,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return;
         }
 
+        if (--this.hitboxUpdateTicks <= 0L) {
+            this.hitboxUpdateTicks = 10;
+            this.updateHitbox();
+        }
+
         if (this.isAlive() && this.isHallucination()) {
             this.setHealth(this.getHealth() - 4f);
         }
@@ -1072,7 +1189,6 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         }
 
         this.movementTick(serverWorld);
-
         this.getStateManager().tick(serverWorld);
 
         if (this.isLunging() && this.isOnGround()) {
@@ -1166,7 +1282,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         boolean areBlocksAboveHead = Util.areBlocksAround(serverWorld,this.getBlockPos().up(2),1,0,1);
 
-        this.setClimbing(areBlocksAboveHead && Util.get2dDistance(this.getPos(),this.getTarget().getPos()) <= 5 && this.getTarget().getBlockY() > this.getBlockY());
+        this.setClimbing(areBlocksAboveHead && Util.getFlatDistance(this.getPos(),this.getTarget().getPos()) <= 5 && this.getTarget().getBlockY() > this.getBlockY());
 
         if (!this.isClimbing()) {
             return;

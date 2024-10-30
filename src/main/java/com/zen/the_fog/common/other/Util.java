@@ -36,15 +36,16 @@ public class Util {
         return new Vec3d(i * j, -k, h * j);
     }
 
-    public static double get2dDistance(Vec3d a,Vec3d b) {
-        a = new Vec3d(a.getX(),0,a.getZ());
-        b = new Vec3d(b.getX(),0,b.getZ());
-        return a.distanceTo(b);
+    public static double getFlatDistance(Vec3d a, Vec3d b) {
+        double d = b.x - a.x;
+        double e = b.z - a.z;
+
+        return Math.sqrt(d * d + e * e);
     }
 
     public static float lerp(float a, float b, float f)
     {
-        return (float) (a * (1.0 - f) + (b * f));
+        return a * (1f - f) + (b * f);
     }
 
     public static boolean isDay(World world) {

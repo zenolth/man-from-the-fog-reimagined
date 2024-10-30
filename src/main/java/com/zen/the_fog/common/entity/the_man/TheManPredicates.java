@@ -1,5 +1,8 @@
 package com.zen.the_fog.common.entity.the_man;
 
+import com.zen.the_fog.common.item.ModItems;
+import dev.emi.trinkets.api.TrinketComponent;
+import dev.emi.trinkets.api.TrinketsApi;
 import net.minecraft.block.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -26,6 +29,11 @@ public class TheManPredicates {
             return false;
         }
         PlayerEntity player = (PlayerEntity) entity;
+
+        if (TrinketsApi.getTrinketComponent(player).isPresent() && TrinketsApi.getTrinketComponent(player).get().isEquipped(ModItems.EREBUS_ORB)) {
+            return false;
+        }
+
         return !player.isCreative() && !player.isSpectator();
     };
 

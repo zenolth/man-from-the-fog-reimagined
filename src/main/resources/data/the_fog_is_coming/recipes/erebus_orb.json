@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "gtg",
+    "tet",
+    "iti"
+  ],
+  "key": {
+    "g": {
+      "item": "minecraft:gold_nugget"
+    },
+    "t": {
+      "item": "the_fog_is_coming:tear_of_the_man"
+    },
+    "e": {
+      "item": "minecraft:ender_eye"
+    },
+    "i": {
+      "item": "minecraft:iron_nugget"
+    }
+  },
+  "result": {
+    "item": "the_fog_is_coming:erebus_orb"
+  },
+  "show_notification": true
+}

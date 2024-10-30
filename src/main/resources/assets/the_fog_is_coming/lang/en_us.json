@@ -1,8 +1,10 @@
 {
   "block.the_fog_is_coming.bleeding_obsidian": "Bleeding Obsidian",
   "block.the_fog_is_coming.enshrouded_portal": "Enshrouded Portal",
+  "block.the_fog_is_coming.erebus_lantern": "Erebus Lantern",
 
   "item.the_fog_is_coming.tear_of_the_man": "Tear Of §kThe Man§r",
+  "item.the_fog_is_coming.erebus_orb": "Erebus Orb",
   "item.the_fog_is_coming.fogman_spawn_egg": "§kThe Man§r Spawn Egg",
   "item.the_fog_is_coming.mans_claws": "The Man's claws",
 
@@ -38,9 +40,11 @@
 
   "gamerule.manMinSpawnRange": "The Man's minimal spawning range",
   "gamerule.manMaxSpawnRange": "The Man's maximum spawning range",
+  "gamerule.manCanSpawnInAnyDimension": "Allow The Man to spawn in any dimension",
   
   "gamerule.manShouldBreakGlass": "Is The Man allowed to break glass",
   "gamerule.manShouldBreakLightSources": "Is The Man allowed to break light sources",
 
-  "gamerule.manShouldHungerBeCapped": "Should Player's hunger be capped at 8 when chased"
+  "gamerule.manShouldHungerBeCapped": "Should Player's hunger be capped at 8 when chased",
+  "gamerule.manCanSummonLightning": "Can The Man summon cosmetic lightnings"
 }

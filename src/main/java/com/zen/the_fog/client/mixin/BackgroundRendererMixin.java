@@ -1,7 +1,9 @@
 package com.zen.the_fog.client.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.zen.the_fog.common.gamerules.ModGamerules;
 import com.zen.the_fog.common.other.Util;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.FogShape;
@@ -26,8 +28,15 @@ public class BackgroundRendererMixin {
 
     @Inject(method = "applyFog",at = @At(value = "TAIL"))
     private static void makeFogThiccer(Camera camera, BackgroundRenderer.FogType fogType, float viewDistance, boolean thickFog, float tickDelta, CallbackInfo ci) {
+        MinecraftClient client = MinecraftClient.getInstance();
         Entity entity = camera.getFocusedEntity();
         ClientWorld world = (ClientWorld) entity.getWorld();
+
+        double fogDensityModifier = 1.0;
+
+        if (client.player != null) {
+            fogDensityModifier = client.player.the_fog_is_coming$getFogDensity();
+        }
 
         if (world.getRegistryKey() != ClientWorld.OVERWORLD) {
             return;
@@ -40,7 +49,7 @@ public class BackgroundRendererMixin {
 
         if (fogType == BackgroundRenderer.FogType.FOG_TERRAIN) {
             RenderSystem.setShaderFogStart(0f);
-            RenderSystem.setShaderFogEnd(fogEnd);
+            RenderSystem.setShaderFogEnd((float) (fogEnd * fogDensityModifier));
             RenderSystem.setShaderFogShape(FogShape.CYLINDER);
         }
     }

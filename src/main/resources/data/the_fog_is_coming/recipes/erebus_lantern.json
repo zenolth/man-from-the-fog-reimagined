@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "gtg",
+    "tlt",
+    "gtg"
+  ],
+  "key": {
+    "t": {
+      "item": "the_fog_is_coming:tear_of_the_man"
+    },
+    "g": {
+      "item": "minecraft:ghast_tear"
+    },
+    "l": {
+      "item": "minecraft:lantern"
+    }
+  },
+  "result": {
+    "item": "the_fog_is_coming:erebus_lantern"
+  },
+  "show_notification": true
+}

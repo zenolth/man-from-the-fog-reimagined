@@ -18,6 +18,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.kyrptonaught.customportalapi.api.CustomPortalBuilder;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
@@ -64,7 +65,7 @@ public class ManFromTheFog implements ModInitializer {
 		ServerEntityEvents.ENTITY_LOAD.register(worldEvents);
 		ServerWorldEvents.LOAD.register(worldEvents);
 		ServerTickEvents.END_WORLD_TICK.register(worldEvents);
-		ServerPlayConnectionEvents.DISCONNECT.register(worldEvents);
+		ServerPlayConnectionEvents.JOIN.register(worldEvents);
 
 		ManFromTheFog.LOGGER.info("Successfully initialized %s".formatted(MOD_ID));
 	}

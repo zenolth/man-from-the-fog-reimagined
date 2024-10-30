@@ -44,12 +44,19 @@
 		],
 		"fabric-datagen": [
 			"com.zen.the_fog.ManFromTheFogDataGenerator"
+		],
+		"cardinal-components": [
+			"com.zen.the_fog.common.components.ModComponents"
 		]
 	},
 	"custom": {
 		"loom:injected_interfaces": {
-			"net/minecraft/client/network/ClientPlayerEntity": ["com/zen/the_fog/client/mixin_interfaces/ClientPlayerEntityInterface"]
-		}
+			"net/minecraft/client/network/ClientPlayerEntity": ["com/zen/the_fog/client/mixin_interfaces/ClientPlayerEntityInterface"],
+			"net/minecraft/entity/player/PlayerEntity": ["com/zen/the_fog/common/mixin_interfaces/LookingAtManInterface"]
+		},
+		"cardinal-components": [
+			"the_fog_is_coming:the_man_health"
+		]
 	},
 	"mixins": [
 		"man-from-the-fog.mixins.json",
@@ -63,7 +70,8 @@
 		"minecraft": "~1.20.1",
 		"java": ">=17",
 		"fabric-api": "*",
-		"geckolib": ">=4.4.4"
+		"geckolib": ">=4.4.4",
+		"trinkets": ">=3.7.0"
 	},
 	"suggests": {
 

@@ -16,6 +16,19 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
+
+	exclusiveContent {
+		forRepository {
+			maven {
+				name = "Modrinth"
+				url = "https://api.modrinth.com/maven"
+			}
+		}
+		filter {
+			includeGroup "maven.modrinth"
+		}
+	}
+
 	maven {
 		name = 'GeckoLib'
 		url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
@@ -26,13 +39,13 @@ repositories {
 	}
 
 	maven {
-		name = 'Ladysnake Mods'
+		name = "TerraformersMC"
+		url = "https://maven.terraformersmc.com/"
+	}
+
+	maven {
+		name = "Ladysnake Libs"
 		url = 'https://maven.ladysnake.org/releases'
-		content {
-			includeGroup 'io.github.ladysnake'
-			includeGroup 'org.ladysnake'
-			includeGroupByRegex 'dev\\.onyxstudios.*'
-		}
 	}
 
 	maven {url = "https://maven.kyrptonaught.dev"}
@@ -55,6 +68,13 @@ dependencies {
 
 	modImplementation 'net.kyrptonaught:customportalapi:0.0.1-beta64-1.20'
 	include 'net.kyrptonaught:customportalapi:0.0.1-beta64-1.20'
+
+	modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-base:${project.cca_version}"
+	modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-world:${project.cca_version}"
+	include "dev.onyxstudios.cardinal-components-api:cardinal-components-base:${project.cca_version}"
+	include "dev.onyxstudios.cardinal-components-api:cardinal-components-world:${project.cca_version}"
+
+	modImplementation "dev.emi:trinkets:${trinkets_version}"
 
 	implementation("com.eliotlash.mclib:mclib:20")
 }
