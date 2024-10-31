@@ -8,9 +8,11 @@ import com.zen.the_fog.common.entity.the_man.TheManPackets;
 import com.zen.the_fog.common.entity.the_man.TheManPredicates;
 import com.zen.the_fog.common.entity.the_man.TheManUtils;
 import com.zen.the_fog.common.gamerules.ModGamerules;
+import com.zen.the_fog.common.item.ModItems;
 import com.zen.the_fog.common.other.Util;
 import com.zen.the_fog.common.sounds.ModSounds;
 import com.zen.the_fog.common.world.dimension.ModDimensions;
+import dev.emi.trinkets.api.TrinketsApi;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
@@ -40,7 +42,7 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
 
     public static final float MAN_CREEPY_VOLUME = 5f;
 
-    public static final Predicate<? super ServerPlayerEntity> VALID_PLAYER_PREDICATE = player -> player.isAlive() && !player.isSpectator() && !player.isCreative();
+    public static final Predicate<? super ServerPlayerEntity> VALID_PLAYER_PREDICATE = player -> player.isAlive() && !player.isSpectator() && !player.isCreative() && (TrinketsApi.getTrinketComponent(player).isEmpty() || !TrinketsApi.getTrinketComponent(player).get().isEquipped(ModItems.EREBUS_ORB));
 
     public long spawnCooldown = Util.secToTick(15.0);
 

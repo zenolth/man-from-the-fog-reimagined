@@ -48,6 +48,8 @@ public class ModClientEvents implements ClientTickEvents.EndTick, ClientEntityEv
     private boolean isChased = false;
     private boolean didChase = false;
 
+    private long lookTick = 2;
+
     public static PositionedSoundInstance createMusicLoop(SoundEvent sound, float pitch, float volume) {
         return new PositionedSoundInstance(sound.getId(), SoundCategory.MASTER, volume, pitch, SoundInstance.createRandom(), true, 0, SoundInstance.AttenuationType.NONE, 0.0, 0.0, 0.0, true);
     }
@@ -68,6 +70,12 @@ public class ModClientEvents implements ClientTickEvents.EndTick, ClientEntityEv
     }
 
     public void cameraTick(MinecraftClient client, TheManEntity theMan) {
+        if (--this.lookTick > 0L) {
+            return;
+        }
+
+        this.lookTick = 2;
+
         if (client.world == null) {
             this.isChased = false;
             return;

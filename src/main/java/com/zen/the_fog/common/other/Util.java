@@ -1,5 +1,7 @@
 package com.zen.the_fog.common.other;
 
+import com.zen.the_fog.common.block.ModBlocks;
+import com.zen.the_fog.common.entity.the_man.TheManEntity;
 import com.zen.the_fog.common.gamerules.ModGamerules;
 import net.minecraft.block.BlockState;
 import net.minecraft.server.world.ServerWorld;
@@ -69,13 +71,28 @@ public class Util {
     public static Vec3d getRandomSpawnBehindDirection(ServerWorld serverWorld, Random random, Vec3d origin, Vec3d direction, int minRange, int maxRange) {
         direction = direction.multiply(-1);
         direction = direction.rotateY((float) Math.toRadians((random.nextFloat(-60,60))));
+
+        Vec3d normalizedDirection = direction.normalize();
+        int range;
+
         if (minRange == maxRange) {
-            direction = direction.multiply(minRange);
+            range = minRange;
         } else {
-            direction = direction.multiply(maxRange > minRange ? random.nextInt(minRange,maxRange) : random.nextInt(maxRange,minRange));
+            range = maxRange > minRange ? random.nextInt(minRange,maxRange) : random.nextInt(maxRange,minRange);
         }
 
-        BlockPos blockPos = BlockPos.ofFloored(origin.add(direction));
+        int initialRange = range;
+
+        Vec3d spawnDirection = normalizedDirection.multiply(initialRange);
+
+        BlockPos blockPos = BlockPos.ofFloored(origin.add(spawnDirection));
+
+        while (TheManEntity.getRepellentAroundPosition(blockPos,serverWorld,15) != null) {
+            initialRange += 15;
+            spawnDirection = normalizedDirection.multiply(initialRange);
+            blockPos = BlockPos.ofFloored(origin.add(spawnDirection));
+        }
+
         BlockState blockState = serverWorld.getBlockState(blockPos);
 
         while (!blockState.isAir()) {

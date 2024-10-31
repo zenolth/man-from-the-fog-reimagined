@@ -61,6 +61,7 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 public class TheManEntity extends HostileEntity implements GeoEntity {
@@ -1031,6 +1032,14 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             return;
         }
 
+        if (manRepellentBlock != null) {
+            Vec3d direction = this.getPos().subtract(manRepellentBlock.toCenterPos()).normalize();
+            Vec3d moveToPos = manRepellentBlock.toCenterPos().add(direction.multiply(REPELLENT_RANGE / 2.0));
+
+            this.moveControl.moveTo(moveToPos.getX(),moveToPos.getY(),moveToPos.getZ(),speed);
+            return;
+        }
+
         this.findPath(x, Math.min(y, this.getY()), z);
 
         if (this.path != null) {
@@ -1110,7 +1119,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         double closestDistance = -1.0;
         BlockPos target = null;
 
-        for (BlockPos blockPos : BlockPos.iterateOutwards(centerPos,REPELLENT_RANGE + range,REPELLENT_RANGE + range,REPELLENT_RANGE + range)) {
+        for (BlockPos blockPos : BlockPos.iterateOutwards(centerPos,range,range,range)) {
             BlockState blockState = world.getBlockState(blockPos);
             if (!blockState.isOf(ModBlocks.EREBUS_LANTERN)) continue;
 
@@ -1127,7 +1136,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     @Nullable
     public static BlockPos getRepellentAroundPosition(BlockPos centerPos,WorldView world) {
-        return getRepellentAroundPosition(centerPos,world,0);
+        return getRepellentAroundPosition(centerPos,world,REPELLENT_RANGE);
     }
 
     /* Ticking */
