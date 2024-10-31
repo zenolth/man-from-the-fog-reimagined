@@ -4,11 +4,13 @@ import com.zen.the_fog.common.block.ModBlocks;
 import com.zen.the_fog.common.entity.the_man.TheManEntity;
 import com.zen.the_fog.common.gamerules.ModGamerules;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 import java.lang.Math;
 import java.util.Random;
@@ -61,14 +63,14 @@ public class Util {
 
     /**
      * Generates a random position around position
-     * @param serverWorld The World
+     * @param world The World
      * @param origin Position to generate around
      * @param direction Direction the "player" is looking into
      * @param minRange Minimum range to generate
      * @param maxRange Maximum range to generate
      * @return The generated position
      */
-    public static Vec3d getRandomSpawnBehindDirection(ServerWorld serverWorld, Random random, Vec3d origin, Vec3d direction, int minRange, int maxRange) {
+    public static Vec3d getRandomSpawnBehindDirection(WorldView world, Random random, Vec3d origin, Vec3d direction, int minRange, int maxRange) {
         direction = direction.multiply(-1);
         direction = direction.rotateY((float) Math.toRadians((random.nextFloat(-60,60))));
 
@@ -85,32 +87,12 @@ public class Util {
 
         Vec3d spawnDirection = normalizedDirection.multiply(initialRange);
 
-        BlockPos blockPos = BlockPos.ofFloored(origin.add(spawnDirection));
+        BlockPos blockPos = getTopPosition(world,BlockPos.ofFloored(origin.add(spawnDirection)));
 
-        while (TheManEntity.getRepellentAroundPosition(blockPos,serverWorld,15) != null) {
+        while (TheManEntity.getRepellentAroundPosition(blockPos,world,15) != null) {
             initialRange += 15;
             spawnDirection = normalizedDirection.multiply(initialRange);
-            blockPos = BlockPos.ofFloored(origin.add(spawnDirection));
-        }
-
-        BlockState blockState = serverWorld.getBlockState(blockPos);
-
-        while (!blockState.isAir()) {
-            blockPos = blockPos.up();
-            blockState = serverWorld.getBlockState(blockPos);
-            if (blockPos.getY() >= serverWorld.getTopY()) {
-                break;
-            }
-        }
-
-        BlockState blockStateDown = serverWorld.getBlockState(blockPos.down());
-
-        while (blockStateDown.isAir()) {
-            blockPos = blockPos.down();
-            blockStateDown = serverWorld.getBlockState(blockPos.down());
-            if (blockPos.getY() < serverWorld.getBottomY()) {
-                break;
-            }
+            blockPos = getTopPosition(world,BlockPos.ofFloored(origin.add(spawnDirection)));
         }
 
         return blockPos.toCenterPos();
@@ -132,6 +114,30 @@ public class Util {
                 serverWorld.getGameRules().getInt(ModGamerules.MAN_MIN_SPAWN_RANGE),
                 serverWorld.getGameRules().getInt(ModGamerules.MAN_MAX_SPAWN_RANGE)
         );
+    }
+
+    public static BlockPos getTopPosition(WorldView world, BlockPos pos) {
+        BlockState blockState = world.getBlockState(pos);
+
+        while (!blockState.isAir()) {
+            pos = pos.up();
+            blockState = world.getBlockState(pos);
+            if (pos.getY() >= world.getTopY()) {
+                break;
+            }
+        }
+
+        BlockState blockStateDown = world.getBlockState(pos.down());
+
+        while (blockStateDown.isAir()) {
+            pos = pos.down();
+            blockStateDown = world.getBlockState(pos.down());
+            if (pos.getY() < world.getBottomY()) {
+                break;
+            }
+        }
+
+        return pos;
     }
 
     public static boolean areBlocksAround(ServerWorld serverWorld, BlockPos pos, int rangeX, int rangeY, int rangeZ) {

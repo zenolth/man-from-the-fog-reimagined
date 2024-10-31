@@ -49,7 +49,7 @@ public class TheManSpitEntity extends ProjectileEntity {
         double e = packet.getVelocityY();
         double f = packet.getVelocityZ();
 
-        for(int i = 0; i < 7; ++i) {
+        for(int i = 0; i < 32; ++i) {
             double g = 0.4 + 0.1 * (double)i;
             this.getWorld().addParticle(ModParticles.THE_MAN_SPIT_PARTICLE, this.getX(), this.getY(), this.getZ(), d * g, e, f * g);
         }

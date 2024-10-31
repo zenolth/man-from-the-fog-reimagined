@@ -1,3 +1,6 @@
-- The Man will now try not to spawn in Erebus Lantern's light
-- Fixed The Man not moving out of Erebus Lantern's light when a player isn't in it too
-- "Look" checks now happen every second tick to slightly increase performance
+- The Man will now move away from ANY Erebus Lantern even when a player isn't in its range
+- Fixed The Man still spawning in Erebus Lantern's light when player is higher up
+- The Man now won't pathfind if there's nothing between his target
+- The Man's hitbox now becomes slightly smaller when climbing
+- Added more particles to The Man's acid spit
+- Fixed The Man trying to walk into blocks when avoiding Erebus Lanterns

@@ -68,6 +68,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     public static final EntityDimensions HITBOX_SIZE = EntityDimensions.fixed(0.8f, 2.3f);
     public static final EntityDimensions CROUCH_HITBOX_SIZE = EntityDimensions.fixed(0.8f, 1.3f);
     public static final EntityDimensions CRAWL_HITBOX_SIZE = EntityDimensions.fixed(0.8f, 0.8f);
+    public static final EntityDimensions CLIMB_HITBOX_SIZE = EntityDimensions.fixed(0.4f, 2.3f);
+
     public static final int REPELLENT_RANGE = 8;
 
     public static final double MAN_SPEED = 0.48;
@@ -333,13 +335,13 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         double minRange = this.getServerWorld().getGameRules().get(ModGamerules.MAN_MIN_SPAWN_RANGE).get();
         double maxRange = this.getServerWorld().getGameRules().get(ModGamerules.MAN_MAX_SPAWN_RANGE).get();
 
-        double lookRange = Math.max(minRange, maxRange);
+        double lookRange = Math.max(minRange, maxRange) + MAN_CHASE_DISTANCE;
 
         List<ServerPlayerEntity> players = this.getServerWorld()
                 .getPlayers((player) -> Util.getFlatDistance(this.getPos(),player.getPos()) <= lookRange && TheManPredicates.TARGET_PREDICATE.test(player));
 
         for (ServerPlayerEntity player : players) {
-            if (((LookingAtManInterface) player).the_fog_is_coming$isLookingAtMan()) {
+            if (player.the_fog_is_coming$isLookingAtMan()) {
                 return true;
             }
         }
@@ -390,12 +392,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 return event.setAndContinue(TheManAnimations.SNEAK_RUN);
             }
 
-            if (this.isCrawling()) {
-                return event.setAndContinue(TheManAnimations.CRAWL_RUN);
-            }
-
             if (this.isCrouching()) {
                 return event.setAndContinue(TheManAnimations.CROUCH_RUN);
+            }
+
+            if (this.isCrawling()) {
+                return event.setAndContinue(TheManAnimations.CRAWL_RUN);
             }
 
             return event.setAndContinue(TheManAnimations.RUN);
@@ -962,10 +964,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public void spitAt(LivingEntity target) {
         TheManSpitEntity spitEntity = new TheManSpitEntity(this.getWorld(),this);
-        double velX = target.getX() - this.getX();
-        double velY = target.getY() - this.getY();
-        double velZ = target.getZ() - this.getZ();
-        spitEntity.setVelocity(velX,velY,velZ,1.5f,10.0f);
+        Vec3d direction = target.getPos().subtract(this.getPos()).normalize();
+        spitEntity.setVelocity(direction.getX(),1.5,direction.getZ(),5.5f,10.0f);
 
         if (!this.isSilent()) {
             this.playSpitSound();
@@ -983,6 +983,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public void updateHitbox() {
+        if (this.isClimbing()) {
+            this.currentHitboxSize = CLIMB_HITBOX_SIZE;
+            return;
+        }
+
         if (this.isCrouching()) {
             this.currentHitboxSize = CROUCH_HITBOX_SIZE;
             return;
@@ -1021,29 +1026,41 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     public void moveTo(double x, double y, double z, double speed) {
         if (this.getWorld().isClient()) return;
 
-        BlockPos targetRepellentBlock = getRepellentAroundPosition(BlockPos.ofFloored(x,y,z),this.getServerWorld());
+        Vec3d targetPos = new Vec3d(x,y,z);
+
+        ServerWorld serverWorld = this.getServerWorld();
+
         BlockPos manRepellentBlock = this.getRepellent();
 
-        if (targetRepellentBlock != null && manRepellentBlock != null) {
-            Vec3d direction = (new Vec3d(x,y,z)).subtract(targetRepellentBlock.toCenterPos()).normalize();
-            Vec3d moveToPos = targetRepellentBlock.toCenterPos().add(direction.multiply(REPELLENT_RANGE / 2.0));
-
-            this.moveControl.moveTo(moveToPos.getX(),moveToPos.getY(),moveToPos.getZ(),speed);
-            return;
-        }
-
         if (manRepellentBlock != null) {
-            Vec3d direction = this.getPos().subtract(manRepellentBlock.toCenterPos()).normalize();
+            Vec3d direction = targetPos.subtract(manRepellentBlock.toCenterPos()).normalize();
             Vec3d moveToPos = manRepellentBlock.toCenterPos().add(direction.multiply(REPELLENT_RANGE / 2.0));
+            BlockPos topPos = Util.getTopPosition(serverWorld,BlockPos.ofFloored(moveToPos));
 
-            this.moveControl.moveTo(moveToPos.getX(),moveToPos.getY(),moveToPos.getZ(),speed);
+            this.findPath(topPos.getX(),topPos.getY(),topPos.getZ());
+
+            if (this.path != null) {
+                this.getNavigation().startMovingAlong(this.path,speed);
+            } else {
+                this.moveControl.moveTo(topPos.getX(),topPos.getY(),topPos.getZ(),speed);
+            }
             return;
         }
 
-        this.findPath(x, Math.min(y, this.getY()), z);
+        BlockHitResult hitResult = serverWorld.raycast(new BlockStateRaycastContext(
+                this.getEyePos(),
+                targetPos,
+                BlockStatePredicate.ANY
+        ));
 
-        if (this.path != null) {
-            this.getNavigation().startMovingAlong(this.path,speed);
+        if (hitResult.getType() == HitResult.Type.BLOCK) {
+            this.findPath(x, Math.min(y, this.getY()), z);
+
+            if (this.path != null) {
+                this.getNavigation().startMovingAlong(this.path,speed);
+            } else {
+                this.moveControl.moveTo(x,y,z,speed);
+            }
         } else {
             this.moveControl.moveTo(x,y,z,speed);
         }
@@ -1322,8 +1339,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public void movementTick(ServerWorld serverWorld) {
         if (this.isSubmergedInWater() && (this.getTarget() == null || this.getTarget().getBlockY() >= this.getBlockY())) {
-            Vec3d oldVelocity = this.getVelocity();
-            this.setVelocity(oldVelocity.getX(),0.5,oldVelocity.getZ());
+            Vec3d oldVelocity = this.getVelocity().normalize();
+            this.setVelocity(oldVelocity.getX() * this.getMovementSpeed(),0.5,oldVelocity.getZ() * this.getMovementSpeed());
         }
 
         this.climbTick(serverWorld);
