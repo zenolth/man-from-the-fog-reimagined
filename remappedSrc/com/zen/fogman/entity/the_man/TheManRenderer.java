@@ -1,6 +1,6 @@
-package com.zen.fogman.common.entity.the_man;
+package com.zen.the_fog.common.entity.the_man;
 
-import com.zen.fogman.ManFromTheFog;
+import com.zen.the_fog.ManFromTheFog;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.util.Identifier;
 import software.bernie.geckolib.model.DefaultedEntityGeoModel;

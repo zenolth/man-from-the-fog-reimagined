@@ -1,9 +1,9 @@
-package com.zen.fogman.common.entity.the_man.states;
+package com.zen.the_fog.common.entity.the_man.states;
 
-import com.zen.fogman.common.entity.the_man.TheManEntity;
-import com.zen.fogman.common.entity.the_man.TheManPredicates;
-import com.zen.fogman.common.entity.the_man.TheManStatusEffects;
-import com.zen.fogman.common.other.MathUtils;
+import com.zen.the_fog.common.entity.the_man.TheManEntity;
+import com.zen.the_fog.common.entity.the_man.TheManPredicates;
+import com.zen.the_fog.common.entity.the_man.TheManStatusEffects;
+import com.zen.the_fog.common.other.MathUtils;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;

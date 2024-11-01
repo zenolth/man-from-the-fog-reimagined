@@ -1,6 +1,6 @@
-package com.zen.fogman.common.sounds;
+package com.zen.the_fog.common.sounds;
 
-import com.zen.fogman.ManFromTheFog;
+import com.zen.the_fog.ManFromTheFog;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.sound.SoundEvent;

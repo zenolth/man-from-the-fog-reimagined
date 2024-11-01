@@ -1,4 +1,4 @@
-package com.zen.fogman.common.entity.the_man;
+package com.zen.the_fog.common.entity.the_man;
 
 import software.bernie.geckolib.core.animation.RawAnimation;
 

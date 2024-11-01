@@ -1,6 +1,6 @@
-package com.zen.fogman.common.entity;
+package com.zen.the_fog.common.entity;
 
-import com.zen.fogman.common.entity.the_man.TheManRenderer;
+import com.zen.the_fog.common.entity.the_man.TheManRenderer;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 
 public class ModRenderers {

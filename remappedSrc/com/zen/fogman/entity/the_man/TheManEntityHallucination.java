@@ -1,4 +1,4 @@
-package com.zen.fogman.common.entity.the_man;
+package com.zen.the_fog.common.entity.the_man;
 
 import net.minecraft.entity.EntityType;
 import net.minecraft.world.World;

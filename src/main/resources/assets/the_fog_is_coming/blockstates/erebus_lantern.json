@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "hanging=false": {
+      "model": "the_fog_is_coming:block/erebus_lantern"
+    },
+    "hanging=true": {
+      "model": "the_fog_is_coming:block/erebus_lantern_hanging"
+    }
+  }
+}

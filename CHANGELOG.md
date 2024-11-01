@@ -1,3 +1,6 @@
-- Fixed The Man's nbt data not being loaded (specifically ManState)
-- Added a shield to The Man, this "shield" has health (specifically 50) and it doesn't regenerate after it gets broken, there's a sound indicating that it broke
-- Added a Camera shake effect when close to The Man
+- The Man will now move away from ANY Erebus Lantern even when a player isn't in its range
+- Fixed The Man still spawning in Erebus Lantern's light when player is higher up
+- The Man now won't pathfind if there's nothing between his target
+- The Man's hitbox now becomes slightly smaller when climbing
+- Added more particles to The Man's acid spit
+- Fixed The Man trying to walk into blocks when avoiding Erebus Lanterns

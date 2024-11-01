@@ -1,6 +1,6 @@
-package com.zen.fogman.common.damage_type;
+package com.zen.the_fog.common.damage_type;
 
-import com.zen.fogman.ManFromTheFog;
+import com.zen.the_fog.ManFromTheFog;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageType;
 import net.minecraft.registry.RegistryKey;

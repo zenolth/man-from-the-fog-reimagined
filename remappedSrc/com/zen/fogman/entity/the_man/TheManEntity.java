@@ -1,10 +1,10 @@
-package com.zen.fogman.common.entity.the_man;
+package com.zen.the_fog.common.entity.the_man;
 
-import com.zen.fogman.common.entity.ModEntities;
-import com.zen.fogman.common.entity.the_man.states.*;
-import com.zen.fogman.common.item.ModItems;
-import com.zen.fogman.common.other.MathUtils;
-import com.zen.fogman.common.sounds.ModSounds;
+import com.zen.the_fog.common.entity.ModEntities;
+import com.zen.the_fog.common.entity.the_man.states.*;
+import com.zen.the_fog.common.item.ModItems;
+import com.zen.the_fog.common.other.MathUtils;
+import com.zen.the_fog.common.sounds.ModSounds;
 import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.sound.EntityTrackingSoundInstance;
