@@ -3,7 +3,7 @@
 	"id": "the_fog_is_coming",
 	"version": "${version}",
 	"name": "Man From The Fog",
-	"description": "...",
+	"description": "Experience The Man with a fresh coat of paint and a lot harder to beat AI",
 	"authors": [
 		"Zen"
 	],
@@ -12,6 +12,12 @@
 			"name": "Korben",
 			"contact": {
 				"homepage": "https://github.com/mpustovoi"
+			}
+		},
+		{
+			"name": "ManiZ",
+			"contact": {
+				"homepage": "https://modrinth.com/user/ManiZ"
 			}
 		},
 		{
@@ -28,7 +34,7 @@
 		}
 	],
 	"contact": {
-		"homepage": "https://modrinth.com/mod/man-from-the-fog-reimagined",
+		"homepage": "https://zenolth.site",
 		"sources": "https://github.com/z3n01d/man-from-the-fog-reimagined",
 		"issues": "https://github.com/z3n01d/man-from-the-fog-reimagined/issues"
 	},
@@ -47,6 +53,9 @@
 		],
 		"cardinal-components": [
 			"com.zen.the_fog.common.components.ModComponents"
+		],
+		"modmenu": [
+			"com.zen.the_fog.common.config.ModMenuIntegration"
 		]
 	},
 	"custom": {
@@ -71,9 +80,11 @@
 		"java": ">=17",
 		"fabric-api": "*",
 		"geckolib": ">=4.4.4",
-		"trinkets": ">=3.7.0"
+		"trinkets": ">=3.7.0",
+		"yet_another_config_lib_v3": ">=3.6.1"
 	},
 	"suggests": {
-
+		"entity-model-features": ">=2.2",
+		"enhanced-celestials": ">=5.0.1.0"
 	}
 }

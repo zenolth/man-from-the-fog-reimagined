@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.6-SNAPSHOT'
+	id 'fabric-loom' version '1.8-SNAPSHOT'
 	id 'maven-publish'
 }
 
@@ -49,6 +49,11 @@ repositories {
 	}
 
 	maven {url = "https://maven.kyrptonaught.dev"}
+
+	maven {
+		name = 'Xander Maven'
+		url = 'https://maven.isxander.dev/releases'
+	}
 }
 
 fabricApi {
@@ -75,6 +80,13 @@ dependencies {
 	include "dev.onyxstudios.cardinal-components-api:cardinal-components-world:${project.cca_version}"
 
 	modImplementation "dev.emi:trinkets:${trinkets_version}"
+
+	modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+
+	modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
+
+	modCompileOnly("maven.modrinth:enhanced-celestials:${project.ec_version}")
+	modRuntimeOnly("maven.modrinth:enhanced-celestials:${project.ec_version}")
 
 	implementation("com.eliotlash.mclib:mclib:20")
 }

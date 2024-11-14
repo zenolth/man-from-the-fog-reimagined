@@ -1,8 +1,8 @@
 package com.zen.the_fog.common.status_effects;
 
+import com.zen.the_fog.common.config.Config;
 import com.zen.the_fog.common.entity.ModEntities;
 import com.zen.the_fog.common.entity.the_man.TheManEntityParanoia;
-import com.zen.the_fog.common.gamerules.ModGamerules;
 import com.zen.the_fog.common.other.Util;
 import com.zen.the_fog.common.sounds.ModSounds;
 import com.zen.the_fog.common.world.dimension.ModDimensions;
@@ -113,7 +113,7 @@ public class ParanoiaStatusEffect extends StatusEffect {
         if (!this.doesEffects && --this.cooldown <= 0) {
             this.doesEffects = true;
 
-            if (Math.random() < HALLUCINATION_CHANCE * amplifier && (Util.isNight(entity.getWorld()) || entity.getWorld().getGameRules().getBoolean(ModGamerules.MAN_CAN_SPAWN_IN_DAY))) {
+            if (Math.random() < HALLUCINATION_CHANCE * amplifier && (Util.isNight(entity.getWorld()) || Config.get().spawnInDay)) {
                 this.spawnHallucinations(entity);
             } else {
                 this.playRandomSound(entity);

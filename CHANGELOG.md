@@ -1,6 +1,10 @@
-- The Man will now move away from ANY Erebus Lantern even when a player isn't in its range
-- Fixed The Man still spawning in Erebus Lantern's light when player is higher up
-- The Man now won't pathfind if there's nothing between his target
-- The Man's hitbox now becomes slightly smaller when climbing
-- Added more particles to The Man's acid spit
-- Fixed The Man trying to walk into blocks when avoiding Erebus Lanterns
+- Optimized heavy operations so they don't run every tick (getting path,getting a target,checking for blocks to break etc.)
+- New animations
+- Replaced gamerules with YACL configs
+- Added compatibility with Enhanced Celestials
+  - Blood Moon and Super Blood Moon affect The Man's stats
+  - The Man ignores Erebus/repellent items in Super Blood Moon
+- Removed fog density option
+- Made fog less dense by default
+- The Man now ignores players at 1 HP
+- The Man's block sound is now Shield's block sound

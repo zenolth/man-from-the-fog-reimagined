@@ -1,7 +1,7 @@
 package com.zen.the_fog.common.entity.the_man;
 
+import com.zen.the_fog.common.config.Config;
 import com.zen.the_fog.common.entity.ModEntities;
-import com.zen.the_fog.common.gamerules.ModGamerules;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LightningEntity;
@@ -27,7 +27,7 @@ public class TheManUtils {
     }
 
     public static void doLightning(ServerWorld serverWorld, double x, double y, double z) {
-        if (!serverWorld.getGameRules().getBoolean(ModGamerules.MAN_CAN_SUMMON_LIGHTNING)) return;
+        if (!Config.get().summonCosmeticLightning) return;
 
         LightningEntity lightningEntity = new LightningEntity(EntityType.LIGHTNING_BOLT, serverWorld);
         lightningEntity.setCosmetic(true);

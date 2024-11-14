@@ -1,10 +1,13 @@
 package com.zen.the_fog.common.other;
 
-import com.zen.the_fog.common.block.ModBlocks;
+import com.zen.the_fog.common.config.Config;
 import com.zen.the_fog.common.entity.the_man.TheManEntity;
-import com.zen.the_fog.common.gamerules.ModGamerules;
+import corgitaco.enhancedcelestials.EnhancedCelestialsWorldData;
+import corgitaco.enhancedcelestials.api.EnhancedCelestialsRegistry;
+import corgitaco.enhancedcelestials.api.lunarevent.DefaultLunarEvents;
+import corgitaco.enhancedcelestials.core.EnhancedCelestialsContext;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -61,6 +64,32 @@ public class Util {
         return !isDay(world);
     }
 
+    public static boolean isEnhancedCelestialsPresent() {
+        return FabricLoader.getInstance().isModLoaded("enhancedcelestials");
+    }
+
+    public static boolean isBloodMoon(World world) {
+        if (!isEnhancedCelestialsPresent()) return false;
+
+        EnhancedCelestialsContext lunarContext = ((EnhancedCelestialsWorldData) world).getLunarContext();
+
+        if (lunarContext == null) return false;
+
+        return lunarContext.getLunarForecast().getCurrentEventRaw().getKey().isPresent()
+                && lunarContext.getLunarForecast().getCurrentEventRaw().getKey().get() == DefaultLunarEvents.BLOOD_MOON;
+    }
+
+    public static boolean isSuperBloodMoon(World world) {
+        if (!isEnhancedCelestialsPresent()) return false;
+
+        EnhancedCelestialsContext lunarContext = ((EnhancedCelestialsWorldData) world).getLunarContext();
+
+        if (lunarContext == null) return false;
+
+        return lunarContext.getLunarForecast().getCurrentEventRaw().getKey().isPresent()
+                && lunarContext.getLunarForecast().getCurrentEventRaw().getKey().get() == DefaultLunarEvents.SUPER_BLOOD_MOON;
+    }
+
     /**
      * Generates a random position around position
      * @param world The World
@@ -111,8 +140,8 @@ public class Util {
                 random,
                 origin,
                 direction,
-                serverWorld.getGameRules().getInt(ModGamerules.MAN_MIN_SPAWN_RANGE),
-                serverWorld.getGameRules().getInt(ModGamerules.MAN_MAX_SPAWN_RANGE)
+                Config.get().minSpawnRange,
+                Config.get().maxSpawnRange
         );
     }
 

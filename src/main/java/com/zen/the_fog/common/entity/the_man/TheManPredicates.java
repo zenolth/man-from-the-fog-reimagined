@@ -30,22 +30,20 @@ public class TheManPredicates {
         }
         PlayerEntity player = (PlayerEntity) entity;
 
-        if (TrinketsApi.getTrinketComponent(player).isPresent() && TrinketsApi.getTrinketComponent(player).get().isEquipped(ModItems.EREBUS_ORB)) {
+        if (!TheManEntity.canAttack(player,player.getWorld())) {
             return false;
         }
 
-        return !player.isCreative() && !player.isSpectator();
+        return !player.isCreative() && !player.isSpectator() && player.getHealth() > 1;
     };
 
     public static final Predicate<Entity> VALID_MAN = entity ->
-            entity instanceof TheManEntity theMan && !theMan.isHallucination() && theMan.isAlive();
+            entity instanceof TheManEntity theMan && !theMan.isHallucination() && !theMan.isParanoia() && theMan.isAlive();
 
     public static final Predicate<Entity> VALID_MAN_HALLUCINATION = entity ->
             entity instanceof TheManEntity theMan && theMan.isHallucination() && !theMan.isParanoia() && theMan.isAlive();
 
     public static final Predicate<BlockState> EXCEPT_AIR = blockState -> !blockState.isAir();
-
-
 
     public static final BiPredicate<ServerWorld, BlockPos> CLIMBABLE_BLOCK_PREDICATE = (serverWorld,blockPos) -> {
         BlockState blockState = serverWorld.getBlockState(blockPos);

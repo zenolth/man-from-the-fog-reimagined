@@ -2,28 +2,26 @@ package com.zen.the_fog.common.server;
 
 import com.zen.the_fog.common.components.ModComponents;
 import com.zen.the_fog.common.components.TheManHealthComponent;
+import com.zen.the_fog.common.config.Config;
 import com.zen.the_fog.common.entity.ModEntities;
 import com.zen.the_fog.common.entity.the_man.TheManEntity;
-import com.zen.the_fog.common.entity.the_man.TheManPackets;
-import com.zen.the_fog.common.entity.the_man.TheManPredicates;
 import com.zen.the_fog.common.entity.the_man.TheManUtils;
-import com.zen.the_fog.common.gamerules.ModGamerules;
 import com.zen.the_fog.common.item.ModItems;
 import com.zen.the_fog.common.other.Util;
 import com.zen.the_fog.common.sounds.ModSounds;
 import com.zen.the_fog.common.world.dimension.ModDimensions;
+import corgitaco.enhancedcelestials.EnhancedCelestialsWorldData;
+import corgitaco.enhancedcelestials.api.lunarevent.DefaultLunarEvents;
+import corgitaco.enhancedcelestials.core.EnhancedCelestialsContext;
+import corgitaco.enhancedcelestials.lunarevent.LunarForecast;
 import dev.emi.trinkets.api.TrinketsApi;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -42,9 +40,9 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
 
     public static final float MAN_CREEPY_VOLUME = 5f;
 
-    public static final Predicate<? super ServerPlayerEntity> VALID_PLAYER_PREDICATE = player -> player.isAlive() && !player.isSpectator() && !player.isCreative() && (TrinketsApi.getTrinketComponent(player).isEmpty() || !TrinketsApi.getTrinketComponent(player).get().isEquipped(ModItems.EREBUS_ORB));
+    public static final Predicate<? super ServerPlayerEntity> VALID_PLAYER_PREDICATE = player -> player.isAlive() && !player.isSpectator() && !player.isCreative() && TheManEntity.canAttack(player,player.getWorld());
 
-    public long spawnCooldown = Util.secToTick(15.0);
+    public long ticksBetweenSpawnAttempts = Util.secToTick(15.0);
 
     public Random random = new Random();
 
@@ -116,7 +114,9 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
 
     @Override
     public void onWorldLoad(MinecraftServer server, ServerWorld serverWorld) {
-        spawnCooldown = Util.secToTick(serverWorld.getGameRules().get(ModGamerules.MAN_SPAWN_COOLDOWN).get());
+        Config.load();
+
+        ticksBetweenSpawnAttempts = Util.secToTick(Config.get().timeBetweenSpawnAttempts);
     }
 
     @Override
@@ -130,13 +130,11 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
             return;
         }
 
-        GameRules gameRules = serverWorld.getGameRules();
-
-        if (!gameRules.getBoolean(ModGamerules.MAN_CAN_SPAWN_IN_ANY_DIMENSION) && !TheManEntity.isInAllowedDimension(serverWorld)) {
+        if (!TheManEntity.isInAllowedDimension(serverWorld)) {
             return;
         }
 
-        if (Util.isDay(serverWorld) && !gameRules.getBoolean(ModGamerules.MAN_CAN_SPAWN_IN_DAY)) {
+        if (Util.isDay(serverWorld) && !Config.get().spawnInDay) {
             return;
         }
 
@@ -144,21 +142,29 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
             return;
         }
 
-        if (--spawnCooldown <= 0L) {
+        if (--ticksBetweenSpawnAttempts <= 0L) {
 
-            int spawnChanceMul = gameRules.getBoolean(ModGamerules.MAN_SPAWN_CHANCE_SCALES) ? serverWorld.getPlayers(VALID_PLAYER_PREDICATE).size() : 1;
+            int spawnChanceMul = Config.get().spawnChanceScalesWithPlayerCount ? serverWorld.getPlayers(VALID_PLAYER_PREDICATE).size() : 1;
 
             if (serverWorld.getRegistryKey() == ModDimensions.ENSHROUDED_LEVEL_KEY) {
                 spawnChanceMul *= 2;
             }
 
-            double spawnChance = gameRules.get(ModGamerules.MAN_SPAWN_CHANCE).get() * spawnChanceMul;
+            double spawnChance = Config.get().spawnChance * spawnChanceMul;
 
-            if (gameRules.getBoolean(ModGamerules.MAN_CAN_SPAWN_IN_DAY) && serverWorld.getRegistryKey() == World.OVERWORLD && Util.isDay(serverWorld)) {
+            if (Config.get().spawnInDay && serverWorld.getRegistryKey() == World.OVERWORLD && Util.isDay(serverWorld)) {
                 spawnChance /= 2.0;
             }
 
-            double ambientChance = gameRules.get(ModGamerules.MAN_AMBIENT_SOUND_CHANCE).get();
+            if (Util.isBloodMoon(serverWorld)) {
+                spawnChance *= 2;
+            }
+
+            if (Util.isSuperBloodMoon(serverWorld)) {
+                spawnChance *= 10;
+            }
+
+            double ambientChance = Config.get().fakeSpawnChance;
 
             double spawnRandom = Math.random();
             double ambientRandom = Math.random();
@@ -171,7 +177,7 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
                 }
             }
 
-            spawnCooldown = Util.secToTick(gameRules.get(ModGamerules.MAN_SPAWN_COOLDOWN).get());
+            ticksBetweenSpawnAttempts = Util.secToTick(Config.get().timeBetweenSpawnAttempts);
         }
     }
 }

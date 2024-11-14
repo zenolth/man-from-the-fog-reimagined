@@ -35,7 +35,7 @@ import org.joml.Matrix4f;
 import java.util.List;
 
 @Environment(EnvType.CLIENT)
-public class ModClientEvents implements ClientTickEvents.EndTick, ClientEntityEvents.Load {
+public class ModClientEvents implements ClientTickEvents.EndTick {
 
     public static final double MAN_DETECT_RANGE = 1024;
 
@@ -175,13 +175,6 @@ public class ModClientEvents implements ClientTickEvents.EndTick, ClientEntityEv
             if (soundManager.isPlaying(this.chaseTheme)) {
                 soundManager.stop(this.chaseTheme);
             }
-        }
-    }
-
-    @Override
-    public void onLoad(Entity entity, ClientWorld world) {
-        if (entity instanceof ClientPlayerEntity) {
-            ClientPlayNetworking.send(TheManPackets.UPDATE_FOG_DENSITY, PacketByteBufs.create());
         }
     }
 

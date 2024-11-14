@@ -28,9 +28,17 @@
 
   "subtitles.the_fog_is_coming.shield_break": "§kThe Man§r's shield breaks",
 
-  "gamerule.manSpawnChanceScales": "Should The Man's spawn chance scale by amount of players",
+  "yacl3.config.the_fog_is_coming:config.category.default": "Man From The Fog Reimagined",
+  "yacl3.config.the_fog_is_coming:config.category.default.group.spawning": "Spawning",
+  "yacl3.config.the_fog_is_coming:config.category.default.group.status_effects": "Status Effects",
+  "yacl3.config.the_fog_is_coming:config.category.default.group.griefing": "Griefing",
+  "yacl3.config.the_fog_is_coming:config.category.default.group.misc": "Miscellaneous",
+
+  "yacl3.config.the_fog_is_coming:config.allowedDimensions": "Allowed Dimensions",
+
+  "gamerule.manSpawnChanceScalesWithPlayerCount": "Should The Man's spawn chance scale by amount of players",
   "gamerule.manSpawnChance": "The Man's spawn chance",
-  "gamerule.manAmbientSoundChance": "Chance to play a sound instead of spawning The Man",
+  "gamerule.manFakeSpawnChance": "Chance to play a sound instead of spawning The Man",
   "gamerule.manSpawnCooldown": "Time between The Man's spawn opportunities",
 
   "gamerule.manCanSpawnInDay": "Should The Man spawn when it's day",
