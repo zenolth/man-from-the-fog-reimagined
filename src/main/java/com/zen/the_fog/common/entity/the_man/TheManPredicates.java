@@ -6,23 +6,57 @@ import dev.emi.trinkets.api.TrinketsApi;
 import net.minecraft.block.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 public class TheManPredicates {
-    public static final Predicate<BlockState> BLOCK_STATE_PREDICATE = blockState -> {
+    public static final List<Class<? extends Block>> LOOK_BLACKLIST = Arrays.asList(
+            LeavesBlock.class,
+            PlantBlock.class,
+            FenceBlock.class,
+            FenceGateBlock.class,
+            SlabBlock.class,
+            FlowerPotBlock.class,
+            AbstractPressurePlateBlock.class,
+            FluidBlock.class,
+            TorchBlock.class,
+            DoorBlock.class,
+            AbstractRailBlock.class,
+            BarrierBlock.class,
+            VineBlock.class,
+            LadderBlock.class,
+            NetherPortalBlock.class,
+            TripwireBlock.class,
+            AbstractFireBlock.class,
+            TransparentBlock.class,
+            StairsBlock.class
+    );
 
-        if (blockState.isAir() || blockState.getBlock() instanceof LeavesBlock || blockState.getBlock() instanceof PlantBlock || blockState.getBlock() instanceof FenceBlock || blockState.getBlock() instanceof FenceGateBlock) {
-            return false;
-        }
+    public static final List<Class<? extends Block>> BLOCK_PREDICATE_BLACKLIST = Arrays.asList(
+            PlantBlock.class,
+            FlowerPotBlock.class,
+            AbstractPressurePlateBlock.class,
+            FluidBlock.class,
+            TorchBlock.class,
+            DoorBlock.class,
+            AbstractRailBlock.class,
+            VineBlock.class,
+            LadderBlock.class,
+            NetherPortalBlock.class,
+            TripwireBlock.class,
+            AbstractFireBlock.class
+    );
 
-        return blockState.isOpaque();
-    };
+    public static final Predicate<BlockState> LOOK_BLOCK_STATE_PREDICATE = blockState -> !blockState.isAir() && blockState.isOpaque() && !LOOK_BLACKLIST.contains(blockState.getBlock().getClass());
+    public static final Predicate<BlockState> BLOCK_STATE_PREDICATE = blockState -> !blockState.isAir() && blockState.isOpaque() && !BLOCK_PREDICATE_BLACKLIST.contains(blockState.getBlock().getClass());
 
     public static final Predicate<Entity> TARGET_PREDICATE = entity -> {
         if (!entity.isPlayer()) {

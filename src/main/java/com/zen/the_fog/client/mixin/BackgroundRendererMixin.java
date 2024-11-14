@@ -2,7 +2,6 @@ package com.zen.the_fog.client.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.zen.the_fog.common.other.Util;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.FogShape;
@@ -19,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class BackgroundRendererMixin {
 
     @Unique
-    private static final float NIGHT_FOG_END = 44f;
+    private static final float NIGHT_FOG_END = 52f;
 
     @Unique
     private static float fogEnd = NIGHT_FOG_END;

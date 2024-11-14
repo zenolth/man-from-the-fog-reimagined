@@ -144,6 +144,8 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     private long targetDetectTicks = 10;
     // Path ticks
     private long pathfindTicks = 5;
+    // Crouch/Crawl collision checks
+    private long headCollisionTicks = 5;
     // Far away ticks
     private long farAwayTicks = TOO_FAR_AWAY_TICKS;
 
@@ -245,7 +247,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED,MAN_SPEED)
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE,5.5)
                 .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK,3.5)
-                .add(EntityAttributes.GENERIC_ATTACK_SPEED,1.3)
+                .add(EntityAttributes.GENERIC_ATTACK_SPEED,0.95)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE,MAN_CHASE_DISTANCE * 2)
                 .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE,100)
                 .add(EntityAttributes.GENERIC_ARMOR,7)
@@ -281,8 +283,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         this.getDataTracker().startTracking(TheManDataTrackers.SHIELD_HEALTH, 50f);
         this.getDataTracker().startTracking(TheManDataTrackers.CLIMBING,false);
+
         this.getDataTracker().startTracking(TheManDataTrackers.CROUCHING,false);
         this.getDataTracker().startTracking(TheManDataTrackers.CRAWLING,false);
+        this.getDataTracker().startTracking(TheManDataTrackers.CROUCHING_COLLIDES_HEAD,false);
+        this.getDataTracker().startTracking(TheManDataTrackers.CRAWLING_COLLIDES_HEAD,false);
+
         this.getDataTracker().startTracking(TheManDataTrackers.STATE,TheManState.STARE.ordinal());
         this.getDataTracker().startTracking(TheManDataTrackers.IS_LUNGING,false);
     }
@@ -342,6 +348,22 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
     public boolean isCrawling() {
         return this.getDataTracker().get(TheManDataTrackers.CRAWLING);
+    }
+
+    public void setCrouchingHeadCollision(boolean crouching) {
+        this.getDataTracker().set(TheManDataTrackers.CROUCHING_COLLIDES_HEAD,crouching);
+    }
+
+    public boolean isCrouchingHeadColliding() {
+        return this.getDataTracker().get(TheManDataTrackers.CROUCHING_COLLIDES_HEAD);
+    }
+
+    public void setCrawlingHeadCollision(boolean crawling) {
+        this.getDataTracker().set(TheManDataTrackers.CRAWLING_COLLIDES_HEAD,crawling);
+    }
+
+    public boolean isCrawlingHeadColliding() {
+        return this.getDataTracker().get(TheManDataTrackers.CRAWLING_COLLIDES_HEAD);
     }
 
     @Environment(EnvType.CLIENT)
@@ -414,11 +436,11 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                 return event.setAndContinue(TheManAnimations.SNEAK_RUN);
             }
 
-            if (this.isCrouching()) {
+            if (this.isCrouchingHeadColliding()) {
                 return event.setAndContinue(TheManAnimations.CROUCH_RUN);
             }
 
-            if (this.isCrawling()) {
+            if (this.isCrawlingHeadColliding()) {
                 return event.setAndContinue(TheManAnimations.CRAWL_RUN);
             }
 
@@ -689,21 +711,22 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         RegistryEntry<DamageType> damageType = source.getTypeRegistryEntry();
 
-        boolean isBullet = source.getName().contains("bullet");
+        if (damageType.getKey().isEmpty()) return false;
 
-        if ((damageType.getKey().isPresent() && !ALLOWED_DAMAGE_TYPES.contains(damageType.getKey().get())) || !isBullet) {
+        boolean isBullet = damageType.getKey().get().getValue().getPath().contains("bullet");
+
+        if (!ALLOWED_DAMAGE_TYPES.contains(damageType.getKey().get()) && !isBullet) {
             this.blockDamage(source);
             return false;
+        }
+
+        if (isBullet) {
+            amount = 0.2f;
         }
 
         if (this.hasShield()) {
             this.damageShield(amount);
             return true;
-        }
-
-        if (isBullet && amount > 27) {
-            this.blockDamage(source);
-            return false;
         }
 
         if (Util.isNight(this.getWorld())) {
@@ -730,7 +753,12 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                     return false;
                 }
 
-                EntityHitResult hitResult = ProjectileUtil.raycast(
+                BlockHitResult blockHitResult = this.getWorld().raycast(new BlockStateRaycastContext(
+                        livingEntity.getEyePos(),
+                        new Vec3d(this.getX(),livingEntity.getEyeY(),this.getZ()),
+                        TheManPredicates.BLOCK_STATE_PREDICATE
+                ));
+                EntityHitResult entityHitResult = ProjectileUtil.raycast(
                         livingEntity,
                         livingEntity.getEyePos(),
                         new Vec3d(this.getX(),livingEntity.getEyeY(),this.getZ()),
@@ -739,18 +767,17 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
                         15
                 );
 
-                if (hitResult != null && hitResult.getType() == HitResult.Type.ENTITY) {
-                    this.blockDamage(source);
+                if (blockHitResult != null && blockHitResult.getType() == HitResult.Type.BLOCK) {
+                    return false;
+                }
+
+                if (entityHitResult != null && entityHitResult.getType() == HitResult.Type.ENTITY) {
                     return false;
                 }
 
                 if (Math.random() < this.blockChance) {
                     if (this.blockChance < 1.0) {
-                        if (isBullet) {
-                            this.blockChance += 0.4;
-                        } else {
-                            this.blockChance += 0.1;
-                        }
+                        this.blockChance += 0.1;
                     } else {
                         this.blockChance = 1.0;
                     }
@@ -929,7 +956,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
     }
 
     public boolean tryAttackTarget(Entity target) {
-        if (target instanceof LivingEntity livingEntity && getRepellentAroundPosition(livingEntity.getBlockPos(),this.getWorld()) != null) return false;
+        if (target instanceof LivingEntity livingEntity && getRepellentAroundPosition(livingEntity.getBlockPos(),this.getWorld()) != null && !Util.isSuperBloodMoon(this.getWorld())) return false;
 
         float attackDamage = (float)this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         float attackKnockback = (float)this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_KNOCKBACK);
@@ -1003,8 +1030,18 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
         this.getWorld().spawnEntity(spitEntity);
     }
 
+    @Override
+    public double squaredAttackRange(LivingEntity target) {
+        return (this.getWidth() * 2.0F * this.getWidth() * 2.0F + target.getWidth()) + 0.5;
+    }
+
     public void attack(LivingEntity target) {
-        if (this.isInAttackRange(target) && --this.attackCooldown <= 0L) {
+        BlockHitResult hitResult = this.getWorld().raycast(new BlockStateRaycastContext(
+                new Vec3d(this.getX(),target.getY(),this.getZ()),
+                target.getPos(),
+                TheManPredicates.BLOCK_STATE_PREDICATE
+        ));
+        if (this.isInAttackRange(target) && hitResult.getType() == HitResult.Type.MISS && --this.attackCooldown <= 0L) {
             this.attackCooldown = Util.secToTick(this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_SPEED));
             this.swingHand(Hand.MAIN_HAND);
             this.tryAttack(target);
@@ -1237,7 +1274,7 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
             this.pathfindTicks = 5;
         }
 
-        if (!Util.isBloodMoon(serverWorld) && !Util.isSuperBloodMoon(serverWorld)) {
+        if (this.getState() == TheManState.CHASE && !Util.isBloodMoon(serverWorld) && !Util.isSuperBloodMoon(serverWorld)) {
             if (--this.aliveTicks <= 0L) {
                 this.despawn();
                 return;
@@ -1407,11 +1444,21 @@ public class TheManEntity extends HostileEntity implements GeoEntity {
 
         this.climbTick(serverWorld);
 
-        boolean areBlocksAboveHead = Util.areBlocksAround(serverWorld,this.getBlockPos().up(2),2,0,2);
-        boolean areBlocksAroundChest = Util.areBlocksAround(serverWorld,this.getBlockPos().up(1),2,0,2);
+        if (--this.headCollisionTicks <= 0L) {
 
-        this.setCrouching(areBlocksAboveHead && !areBlocksAroundChest && !this.isClimbing());
-        this.setCrawling(areBlocksAboveHead && areBlocksAroundChest && !this.isClimbing());
+            boolean areBlocksAboveHead = Util.areBlocksAround(serverWorld,this.getBlockPos().up(2),2,0,2);
+            boolean areBlocksAroundChest = Util.areBlocksAround(serverWorld,this.getBlockPos().up(1),2,0,2);
+            boolean isBlockAboveHead = Util.isBlockPresent(serverWorld,this.getBlockPos().up(2));
+            boolean isBlockAtChest = Util.isBlockPresent(serverWorld,this.getBlockPos().up(1));
+
+            this.setCrouching(areBlocksAboveHead && !areBlocksAroundChest && !this.isClimbing());
+            this.setCrawling(areBlocksAboveHead && areBlocksAroundChest && !this.isClimbing());
+
+            this.setCrouchingHeadCollision(isBlockAboveHead && !isBlockAtChest && !this.isClimbing());
+            this.setCrawlingHeadCollision(isBlockAboveHead && isBlockAtChest && !this.isClimbing());
+
+            this.headCollisionTicks = this.random.nextBetween(1,5);
+        }
 
         this.calculateDimensions();
     }

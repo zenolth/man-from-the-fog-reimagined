@@ -93,7 +93,7 @@ public class ModClientEvents implements ClientTickEvents.EndTick {
                 new BlockStateRaycastContext(
                         new Vec3d(theMan.getX(), theMan.getEyeY(), theMan.getZ()),
                         camera.getPos(),
-                        TheManPredicates.BLOCK_STATE_PREDICATE
+                        TheManPredicates.LOOK_BLOCK_STATE_PREDICATE
                 )
         );
 

@@ -9,6 +9,8 @@ public class TheManDataTrackers {
     public static final TrackedData<Boolean> CLIMBING = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     public static final TrackedData<Boolean> CROUCHING = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     public static final TrackedData<Boolean> CRAWLING = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    public static final TrackedData<Boolean> CROUCHING_COLLIDES_HEAD = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    public static final TrackedData<Boolean> CRAWLING_COLLIDES_HEAD = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     public static final TrackedData<Integer> STATE = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.INTEGER);
     public static final TrackedData<Boolean> IS_LUNGING = DataTracker.registerData(TheManEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 }

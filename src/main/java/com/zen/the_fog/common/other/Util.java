@@ -7,7 +7,7 @@ import corgitaco.enhancedcelestials.api.EnhancedCelestialsRegistry;
 import corgitaco.enhancedcelestials.api.lunarevent.DefaultLunarEvents;
 import corgitaco.enhancedcelestials.core.EnhancedCelestialsContext;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.block.BlockState;
+import net.minecraft.block.*;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -16,6 +16,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 
 import java.lang.Math;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 public class Util {
@@ -169,21 +171,27 @@ public class Util {
         return pos;
     }
 
-    public static boolean areBlocksAround(ServerWorld serverWorld, BlockPos pos, int rangeX, int rangeY, int rangeZ) {
+    public static boolean isBlockPresent(WorldView worldView, BlockPos pos) {
+        BlockState blockState = worldView.getBlockState(pos);
+
+        return !blockState.isAir() && blockState.isFullCube(worldView, pos);
+    }
+
+    public static boolean areBlocksAround(WorldView worldView, BlockPos pos, int rangeX, int rangeY, int rangeZ) {
         for (BlockPos blockPos : BlockPos.iterateOutwards(pos,rangeX,rangeY,rangeZ)) {
-            BlockState blockState = serverWorld.getBlockState(blockPos);
-            if (!blockState.isAir() && blockState.isFullCube(serverWorld,blockPos)) {
+            BlockState blockState = worldView.getBlockState(blockPos);
+            if (!blockState.isAir() && blockState.isFullCube(worldView,blockPos)) {
                 return true;
             }
         }
         return false;
     }
 
-    public static boolean areBlocksAround(ServerWorld serverWorld, BlockPos pos, int rangeY) {
+    public static boolean areBlocksAround(WorldView worldView, BlockPos pos, int rangeY) {
         for (int y = 1 ; y <= rangeY ; y++) {
             BlockPos blockPos = pos.up(y);
-            BlockState blockState = serverWorld.getBlockState(blockPos);
-            if (!blockState.isAir() && blockState.isFullCube(serverWorld,blockPos)) {
+            BlockState blockState = worldView.getBlockState(blockPos);
+            if (!blockState.isAir() && blockState.isFullCube(worldView,blockPos)) {
                 return true;
             }
         }
