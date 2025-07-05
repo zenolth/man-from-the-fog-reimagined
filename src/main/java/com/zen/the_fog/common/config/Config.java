@@ -17,6 +17,8 @@ import net.minecraft.util.Identifier;
 import net.minecraft.world.dimension.DimensionTypes;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 public class Config {
     public static ConfigClassHandler<Config> HANDLER = ConfigClassHandler.createBuilder(Config.class)
@@ -150,6 +152,23 @@ public class Config {
     // we'll let Gson handle it directly. This might not be editable in YACL's GUI screen without more complex setup.
     @SerialEntry(comment = "Map of player UUIDs to their terror mechanics preference (JOINED or DECLINED). Absence means undecided.")
     public java.util.Map<String, String> terrorPlayerList = new java.util.HashMap<>();
+
+    // SPAWN MULTIPLIERS CATEGORY
+    @AutoGen(category = "default", group = "spawn_multipliers")
+    @CustomName("Moon Event Spawn Multipliers")
+    @CustomDescription("Map of moon event IDs (e.g., 'enhancedcelestials:blood_moon') to their spawn chance multipliers.")
+    @SerialEntry(comment = "Map of moon event IDs to spawn chance multipliers. Default: blood_moon=2.0, super_blood_moon=10.0")
+    public java.util.Map<String, Double> moonEventSpawnMultipliers = new java.util.HashMap<>() {{
+        put("enhancedcelestials:blood_moon", 2.0);
+        put("enhancedcelestials:super_blood_moon", 10.0);
+    }};
+
+    @AutoGen(category = "default", group = "spawn_multipliers")
+    @CustomName("Day Spawn Chance Multiplier")
+    @CustomDescription("Multiplier for spawn chance during the day (if day spawning is enabled). 0.0 disables day spawns, 1.0 is no change.")
+    @DoubleField(min = 0.0, max = 10.0) // Assuming a reasonable max, can be adjusted
+    @SerialEntry(comment = "Multiplier for spawn chance during day, if day spawning is enabled. E.g., 0.5 for half chance.")
+    public double daySpawnChanceMultiplier = 0.5;
 
     public static Config get() {
         return HANDLER.instance();

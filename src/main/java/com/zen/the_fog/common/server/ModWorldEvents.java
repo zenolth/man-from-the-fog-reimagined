@@ -12,10 +12,12 @@ import com.zen.the_fog.common.other.Util;
 import com.zen.the_fog.common.sounds.ModSounds;
 import com.zen.the_fog.common.world.dimension.ModDimensions;
 import corgitaco.enhancedcelestials.EnhancedCelestialsWorldData;
-import corgitaco.enhancedcelestials.api.lunarevent.DefaultLunarEvents;
+import corgitaco.enhancedcelestials.api.lunarevent.DefaultLunarEvents; // Keep for now, might be used elsewhere or good for reference
+import corgitaco.enhancedcelestials.api.lunarevent.LunarEvent; // Added
 import corgitaco.enhancedcelestials.core.EnhancedCelestialsContext;
 import corgitaco.enhancedcelestials.lunarevent.LunarForecast;
 import dev.emi.trinkets.api.TrinketsApi;
+import net.minecraft.resources.ResourceKey; // Added
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
@@ -40,6 +42,7 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Optional; // Added
 import java.util.Random;
 import java.util.function.Predicate;
 
@@ -197,34 +200,55 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
             return;
         }
 
-        if (Util.isDay(serverWorld) && !Config.get().spawnInDay) {
-            return;
-        }
-
+        // Initial checks, moved up before spawn chance calculation
         if (TheManUtils.manExists(serverWorld) || TheManUtils.hallucinationsExists(serverWorld)) {
             return;
         }
 
-        if (--ticksBetweenSpawnAttempts <= 0L) {
+        // Day check: if day spawning is disabled and it's day, return early.
+        // If day spawning is enabled, the multiplier will be applied later.
+        if (Util.isDay(serverWorld) && !Config.get().spawnInDay) {
+            return;
+        }
 
-            int spawnChanceMul = Config.get().spawnChanceScalesWithPlayerCount ? serverWorld.getPlayers(VALID_PLAYER_PREDICATE).size() : 1;
+        if (--ticksBetweenSpawnAttempts <= 0L) {
+            int spawnChanceScalesWithPlayerCountMultiplier = Config.get().spawnChanceScalesWithPlayerCount ? serverWorld.getPlayers(VALID_PLAYER_PREDICATE).size() : 1;
 
             if (serverWorld.getRegistryKey() == ModDimensions.ENSHROUDED_LEVEL_KEY) {
-                spawnChanceMul *= 2;
+                spawnChanceScalesWithPlayerCountMultiplier *= 2; // This seems like a dimension-specific base multiplier, keeping it.
             }
 
-            double spawnChance = Config.get().spawnChance * spawnChanceMul;
+            double spawnChance = Config.get().spawnChance * spawnChanceScalesWithPlayerCountMultiplier;
 
-            if (Config.get().spawnInDay && serverWorld.getRegistryKey() == World.OVERWORLD && Util.isDay(serverWorld)) {
-                spawnChance /= 2.0;
+            // Apply day spawn multiplier
+            if (Config.get().spawnInDay && Util.isDay(serverWorld)) {
+                spawnChance *= Config.get().daySpawnChanceMultiplier;
             }
 
-            if (Util.isBloodMoon(serverWorld)) {
-                spawnChance *= 2;
+            // Apply moon event multipliers
+            EnhancedCelestialsWorldData worldData = EnhancedCelestialsWorldData.get(serverWorld);
+            if (worldData != null) {
+                EnhancedCelestialsContext lunarContext = worldData.getLunarContext();
+                if (lunarContext != null) {
+                    LunarForecast forecast = lunarContext.getLunarForecast();
+                    if (forecast != null) {
+                        Optional<ResourceKey<LunarEvent>> eventKeyOptional = forecast.getCurrentEventRaw().getKey();
+                        if (eventKeyOptional.isPresent()) {
+                            // Use .location() for ResourceKey to get the Identifier
+                            String eventIdString = eventKeyOptional.get().location().toString();
+                            if (Config.get().moonEventSpawnMultipliers.containsKey(eventIdString)) {
+                                spawnChance *= Config.get().moonEventSpawnMultipliers.get(eventIdString);
+                                ManFromTheFog.LOGGER.info("Applying multiplier for event: " + eventIdString + ", new chance: " + spawnChance); // Optional: logging
+                            }
+                        }
+                    }
+                }
             }
 
-            if (Util.isSuperBloodMoon(serverWorld)) {
-                spawnChance *= 10;
+            // If spawn chance becomes zero or less after multipliers, no need to proceed.
+            if (spawnChance <= 0) {
+                ticksBetweenSpawnAttempts = Util.secToTick(Config.get().timeBetweenSpawnAttempts);
+                return;
             }
 
             double ambientChance = Config.get().fakeSpawnChance;
