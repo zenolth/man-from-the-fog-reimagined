@@ -141,6 +141,16 @@ public class Config {
     @SerialEntry()
     public boolean summonCosmeticLightning = true;
 
+    // WHITELIST CATEGORY
+    @AutoGen(category = "default", group = "whitelist")
+    @CustomName("Terror Player List")
+    @CustomDescription("Map of player UUIDs to their terror mechanics preference (JOINED or DECLINED).")
+    // YACL3 doesn't have a built-in Map controller, so we'll store it as a list of custom objects or rely on Gson's default map serialization.
+    // For simplicity with YACL's structure and to avoid creating custom object serializers for now,
+    // we'll let Gson handle it directly. This might not be editable in YACL's GUI screen without more complex setup.
+    @SerialEntry(comment = "Map of player UUIDs to their terror mechanics preference (JOINED or DECLINED). Absence means undecided.")
+    public java.util.Map<String, String> terrorPlayerList = new java.util.HashMap<>();
+
     public static Config get() {
         return HANDLER.instance();
     }
