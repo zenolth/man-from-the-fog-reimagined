@@ -1,6 +1,7 @@
 package com.zen.the_fog.common.server;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.zen.the_fog.common.config.Config;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -36,34 +37,15 @@ public class ModCommands {
         dispatcher.register(literal("terror")
             .then(literal("whitelist")
                 .then(literal("join").executes(context -> {
-                    ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-                    String playerUuid = player.getUuidAsString();
-                    Config config = Config.get();
-
-                    if (config.terrorPlayerList == null) {
-                        config.terrorPlayerList = new HashMap<>();
-                    }
-
-                    config.terrorPlayerList.put(playerUuid, STATUS_JOINED);
-                    Config.HANDLER.save();
+                    internalWhitelistAdd(context, STATUS_JOINED);
                     context.getSource().sendFeedback(() -> Text.literal("Has decidido PARTICIPAR en las mecánicas de terror."), false);
                     return 1;
                 }))
                 .then(literal("decline").executes(context -> {
-                    ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-                    String playerUuid = player.getUuidAsString();
-                    Config config = Config.get();
-
-                    if (config.terrorPlayerList == null) {
-                        config.terrorPlayerList = new HashMap<>();
-                    }
-
-                    config.terrorPlayerList.put(playerUuid, STATUS_DECLINED);
-                    Config.HANDLER.save();
+                    internalWhitelistAdd(context, STATUS_DECLINED);
                     context.getSource().sendFeedback(() -> Text.literal("Has decidido NO PARTICIPAR en las mecánicas de terror."), false);
                     return 1;
                 }))
-                // Optional: Command to reset status to undecided
                 .then(literal("undecided").executes(context -> {
                     ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
                     String playerUuid = player.getUuidAsString();
@@ -80,5 +62,18 @@ public class ModCommands {
                 }))
             )
         );
+    }
+
+    private static void internalWhitelistAdd(CommandContext<ServerCommandSource> context, String status) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        String playerUuid = player.getUuidAsString();
+        Config config = Config.get();
+
+        if (config.terrorPlayerList == null) {
+            config.terrorPlayerList = new HashMap<>();
+        }
+
+        config.terrorPlayerList.put(playerUuid, status);
+        Config.HANDLER.save();
     }
 }

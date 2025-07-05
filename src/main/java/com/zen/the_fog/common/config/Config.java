@@ -166,7 +166,7 @@ public class Config {
     @AutoGen(category = "default", group = "spawn_multipliers")
     @CustomName("Day Spawn Chance Multiplier")
     @CustomDescription("Multiplier for spawn chance during the day (if day spawning is enabled). 0.0 disables day spawns, 1.0 is no change.")
-    @DoubleField(min = 0.0, max = 10.0) // Assuming a reasonable max, can be adjusted
+    @DoubleField(min = 0.0, max = 100.0) // Assuming a reasonable max, can be adjusted
     @SerialEntry(comment = "Multiplier for spawn chance during day, if day spawning is enabled. E.g., 0.5 for half chance.")
     public double daySpawnChanceMultiplier = 0.5;
 

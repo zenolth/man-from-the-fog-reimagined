@@ -7,17 +7,12 @@ import com.zen.the_fog.common.config.Config;
 import com.zen.the_fog.common.entity.ModEntities;
 import com.zen.the_fog.common.entity.the_man.TheManEntity;
 import com.zen.the_fog.common.entity.the_man.TheManUtils;
-import com.zen.the_fog.common.item.ModItems;
 import com.zen.the_fog.common.other.Util;
 import com.zen.the_fog.common.sounds.ModSounds;
 import com.zen.the_fog.common.world.dimension.ModDimensions;
 import corgitaco.enhancedcelestials.EnhancedCelestialsWorldData;
-import corgitaco.enhancedcelestials.api.lunarevent.DefaultLunarEvents; // Keep for now, might be used elsewhere or good for reference
-import corgitaco.enhancedcelestials.api.lunarevent.LunarEvent; // Added
 import corgitaco.enhancedcelestials.core.EnhancedCelestialsContext;
 import corgitaco.enhancedcelestials.lunarevent.LunarForecast;
-import dev.emi.trinkets.api.TrinketsApi;
-import net.minecraft.resources.ResourceKey; // Added
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
@@ -37,8 +32,6 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameRules;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -226,30 +219,7 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
             }
 
             // Apply moon event multipliers
-            EnhancedCelestialsWorldData worldData = EnhancedCelestialsWorldData.get(serverWorld);
-            if (worldData != null) {
-                EnhancedCelestialsContext lunarContext = worldData.getLunarContext();
-                if (lunarContext != null) {
-                    LunarForecast forecast = lunarContext.getLunarForecast();
-                    if (forecast != null) {
-                        Optional<ResourceKey<LunarEvent>> eventKeyOptional = forecast.getCurrentEventRaw().getKey();
-                        if (eventKeyOptional.isPresent()) {
-                            // Use .location() for ResourceKey to get the Identifier
-                            String eventIdString = eventKeyOptional.get().location().toString();
-                            if (Config.get().moonEventSpawnMultipliers.containsKey(eventIdString)) {
-                                spawnChance *= Config.get().moonEventSpawnMultipliers.get(eventIdString);
-                                ManFromTheFog.LOGGER.info("Applying multiplier for event: " + eventIdString + ", new chance: " + spawnChance); // Optional: logging
-                            }
-                        }
-                    }
-                }
-            }
-
-            // If spawn chance becomes zero or less after multipliers, no need to proceed.
-            if (spawnChance <= 0) {
-                ticksBetweenSpawnAttempts = Util.secToTick(Config.get().timeBetweenSpawnAttempts);
-                return;
-            }
+            spawnChance = TryUseEnhancedCelestials(serverWorld, spawnChance);
 
             double ambientChance = Config.get().fakeSpawnChance;
 
@@ -266,5 +236,34 @@ public class ModWorldEvents implements ServerEntityEvents.Load, ServerWorldEvent
 
             ticksBetweenSpawnAttempts = Util.secToTick(Config.get().timeBetweenSpawnAttempts);
         }
+    }
+
+    private double TryUseEnhancedCelestials(ServerWorld serverWorld, double spawnChance) {
+        if (!Util.isEnhancedCelestialsPresent() || !(serverWorld instanceof EnhancedCelestialsWorldData worldData)) {
+            return spawnChance;
+        }
+
+        EnhancedCelestialsContext lunarContext = worldData.getLunarContext();
+        if (lunarContext == null) {
+            return spawnChance;
+        }
+
+        LunarForecast forecast = lunarContext.getLunarForecast();
+        if (forecast == null) {
+            return spawnChance;
+        }
+
+        var eventKeyOptional = forecast.getCurrentEventRaw().getKey();
+        if (eventKeyOptional.isEmpty()) {
+            return spawnChance;
+        }
+
+        String eventIdString = eventKeyOptional.get().getValue().toString();
+        if (Config.get().moonEventSpawnMultipliers.containsKey(eventIdString)) {
+            spawnChance *= Config.get().moonEventSpawnMultipliers.get(eventIdString);
+            ManFromTheFog.LOGGER.debug("Applying multiplier for event: {}, new chance: {}", eventIdString, spawnChance);
+        }
+
+        return spawnChance;
     }
 }
