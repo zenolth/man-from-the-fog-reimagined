@@ -10,6 +10,12 @@
     ]
   },
 
+  "cave_ambience": {
+    "sounds": [
+      "the_fog_is_coming:ambience/caveambience"
+    ]
+  },
+
   "man_alarm": {
     "subtitle": "subtitles.the_fog_is_coming.man_alarm",
     "sounds": [
@@ -122,6 +128,18 @@
     "subtitle": "subtitles.the_fog_is_coming.shield_break",
     "sounds": [
       "the_fog_is_coming:mansounds/shield_break"
+    ]
+  },
+
+  "mimic_reveal": {
+    "sounds": [
+      "the_fog_is_coming:mimic/reveal"
+    ]
+  },
+
+  "mimic_reveal_jumpscare": {
+    "sounds": [
+      "the_fog_is_coming:mimic/reveal_jumpscare"
     ]
   }
 }

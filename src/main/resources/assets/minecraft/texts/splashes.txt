@@ -1,4 +1,3 @@
-§4§lHE IS HERE
 §czen §rwas here
 The Man is kinda cool!
 Using Fabric!
@@ -10,15 +9,34 @@ For science!
 Gazi make everyone happy!
 Boomers = Creepers
 a*a + b*b = c*c
-I love crowbars!
-"..." - Gordon Freeman
 If mama ain't happy, nobody happy!
 Good night, Good luck
 TheManEntity theManEntity = new TheManEntity();
 Hi Space!
 D-BOIS!
 Using GeckoLib!
-Nightfall? What's that?
 Police assault in progress
-Why so serious.
 Gimme 20$!
+Buddy!
+Darling!
+So the first night isn't usually that bad so I'll just play through-
+God give me voice, God guide my hand
+How to make Trager juice.//Step 1: §oSqueeze
+A reminder, in the event of a XK-class end-of-the-world scenario, don't panic!//It won't help. Nothing at all will help.//However, panicking will help probably the least.
+Don't forget, today is pizza day!//So head on down to the cafeteria to grab yourself a hot slice!
+Remember, security is the first step towards a safe work environment!//Stay secure, stay vigilant.
+Feel tired and overworked?//Freshly brewed coffee is served at the cafeteria at all hours.
+I am the cure.
+Ring-a-ring o' roses.//A pocket full of posies.//A-tishoo. A-tishoo. We all fall down.
+Reimagined!
+Gott im Himmel.//You have become the host.
+What Third World country made this drill.
+Cloaker!
+Shield!
+I need a medic bag!
+I need my pay day too.
+Stop hitting yourself!//Stop hitting yourself!
+You call this resisting arrest?//We call this a security tweak!
+Hey what is that in the dista-
+Every man has a beast within.//If you push too much, you might unleash the beast.
+He's The Man, not Man From The Fog dammit!

@@ -12,22 +12,12 @@ base {
 
 repositories {
 	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
+	// You should only use this when depending on util mods because
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
 
-	exclusiveContent {
-		forRepository {
-			maven {
-				name = "Modrinth"
-				url = "https://api.modrinth.com/maven"
-			}
-		}
-		filter {
-			includeGroup "maven.modrinth"
-		}
-	}
+	maven { url 'https://jitpack.io' }
 
 	maven {
 		name = 'GeckoLib'
@@ -48,11 +38,16 @@ repositories {
 		url = 'https://maven.ladysnake.org/releases'
 	}
 
-	maven {url = "https://maven.kyrptonaught.dev"}
+	maven { url = "https://maven.kyrptonaught.dev" }
 
 	maven {
-		name = 'Xander Maven'
-		url = 'https://maven.isxander.dev/releases'
+		name = "FzzyMaven"
+		url = "https://maven.fzzyhmstrs.me/"
+	}
+
+	maven {
+		name = "JTDev-Maven-Repository"
+		url = "https://maven.jt-dev.tech/releases"
 	}
 }
 
@@ -62,40 +57,51 @@ fabricApi {
 
 dependencies {
 	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	minecraft("com.mojang:minecraft:${project.minecraft_version}")
+	mappings("net.fabricmc:yarn:${project.yarn_mappings}:v2")
+	modImplementation("net.fabricmc:fabric-loader:${project.loader_version}")
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	modImplementation("net.fabricmc.fabric-api:fabric-api:${project.fabric_version}")
 	// GeckoLib : Animations :3
 	modImplementation("software.bernie.geckolib:geckolib-fabric-${minecraft_version}:${geckolib_version}")
 
-	modImplementation 'net.kyrptonaught:customportalapi:0.0.1-beta64-1.20'
-	include 'net.kyrptonaught:customportalapi:0.0.1-beta64-1.20'
+	modImplementation("net.kyrptonaught:customportalapi:0.0.1-beta64-1.20")
+	include("net.kyrptonaught:customportalapi:0.0.1-beta64-1.20")
 
-	modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-base:${project.cca_version}"
-	modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-world:${project.cca_version}"
-	include "dev.onyxstudios.cardinal-components-api:cardinal-components-base:${project.cca_version}"
-	include "dev.onyxstudios.cardinal-components-api:cardinal-components-world:${project.cca_version}"
+	modImplementation("dev.onyxstudios.cardinal-components-api:cardinal-components-base:${project.cca_version}")
+	modImplementation("dev.onyxstudios.cardinal-components-api:cardinal-components-world:${project.cca_version}")
+	include("dev.onyxstudios.cardinal-components-api:cardinal-components-base:${project.cca_version}")
+	include("dev.onyxstudios.cardinal-components-api:cardinal-components-world:${project.cca_version}")
 
-	modImplementation "dev.emi:trinkets:${trinkets_version}"
+	modImplementation("dev.emi:trinkets:${trinkets_version}")
 
-	modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+	modImplementation("me.fzzyhmstrs:fzzy_config:${project.fzzy_config_version}")
+	modCompileOnly("net.fabricmc:fabric-language-kotlin:1.13.3+kotlin.2.1.21")
 
 	modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
 
-	modCompileOnly("maven.modrinth:enhanced-celestials:${project.ec_version}")
-	modRuntimeOnly("maven.modrinth:enhanced-celestials:${project.ec_version}")
+	modCompileOnly("dev.corgitaco.enhancedcelestials:Enhanced-Celestials-fabric:${project.minecraft_version}-${project.enhanced_celestials_version}")
+	modRuntimeOnly("dev.corgitaco.enhancedcelestials:Enhanced-Celestials-fabric:${project.minecraft_version}-${project.enhanced_celestials_version}")
+
+	modCompileOnly("dev.corgitaco:Data_Anchor-fabric-${project.minecraft_version}:${project.data_anchor_version}")
+	modRuntimeOnly("dev.corgitaco:Data_Anchor-fabric-${project.minecraft_version}:${project.data_anchor_version}")
 
 	implementation("com.eliotlash.mclib:mclib:20")
+
+	implementation("com.github.Chocohead:Fabric-ASM:v2.3")
+	include("com.github.Chocohead:Fabric-ASM:v2.3")
+}
+
+loom {
+	accessWidenerPath = file("src/main/resources/man-from-the-fog.accesswidener")
 }
 
 processResources {
 	inputs.property "version", project.version
 
 	filesMatching("fabric.mod.json") {
-		expand "version": project.version
+		expand "version": inputs.properties.version
 	}
 }
 

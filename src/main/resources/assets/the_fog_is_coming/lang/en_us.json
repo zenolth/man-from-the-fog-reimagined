@@ -28,9 +28,10 @@
 
   "subtitles.the_fog_is_coming.shield_break": "§kThe Man§r's shield breaks",
 
-  "yacl3.config.the_fog_is_coming:config.category.default": "Man From The Fog Reimagined",
+  "yacl3.config.the_fog_is_coming:config.category.default": "Mod behavior",
   "yacl3.config.the_fog_is_coming:config.category.default.group.spawning": "Spawning",
-  "yacl3.config.the_fog_is_coming:config.category.default.group.status_effects": "Status Effects",
+  "yacl3.config.the_fog_is_coming:config.category.default.group.behavior": "The Man behavior",
+  "yacl3.config.the_fog_is_coming:config.category.default.group.status_effect": "Status Effects",
   "yacl3.config.the_fog_is_coming:config.category.default.group.griefing": "Griefing",
   "yacl3.config.the_fog_is_coming:config.category.default.group.misc": "Miscellaneous",
 
