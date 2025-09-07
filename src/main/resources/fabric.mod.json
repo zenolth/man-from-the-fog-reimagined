@@ -85,6 +85,6 @@
 	},
 	"suggests": {
 		"entity-model-features": ">=2.2",
-		"enhanced-celestials": ">=5.0.1.0"
+		"enhanced-celestials": ">=5.0.3.1"
 	}
 }
