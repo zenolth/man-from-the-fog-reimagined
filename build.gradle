@@ -89,6 +89,7 @@ dependencies {
 	modRuntimeOnly("maven.modrinth:enhanced-celestials:${project.ec_version}")
 
 	implementation("com.eliotlash.mclib:mclib:20")
+    modCompileOnly("maven.modrinth:data-anchor:${project.data_anchor_version}")
 }
 
 processResources {
