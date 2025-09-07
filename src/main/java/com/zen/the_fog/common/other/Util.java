@@ -2,10 +2,10 @@ package com.zen.the_fog.common.other;
 
 import com.zen.the_fog.common.config.Config;
 import com.zen.the_fog.common.entity.the_man.TheManEntity;
-import corgitaco.enhancedcelestials.EnhancedCelestialsWorldData;
-import corgitaco.enhancedcelestials.api.EnhancedCelestialsRegistry;
-import corgitaco.enhancedcelestials.api.lunarevent.DefaultLunarEvents;
-import corgitaco.enhancedcelestials.core.EnhancedCelestialsContext;
+import dev.corgitaco.enhancedcelestials.lunarevent.EnhancedCelestialsLunarForecastWorldData;
+import dev.corgitaco.enhancedcelestials.EnhancedCelestials;
+import dev.corgitaco.enhancedcelestials.api.EnhancedCelestialsRegistry;
+import dev.corgitaco.enhancedcelestials.api.lunarevent.DefaultLunarEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.*;
 import net.minecraft.server.world.ServerWorld;
@@ -16,9 +16,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 
 import java.lang.Math;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
+import java.util.Optional;
 
 public class Util {
     public static long tickToSec(long ticks) {
@@ -73,23 +72,27 @@ public class Util {
     public static boolean isBloodMoon(World world) {
         if (!isEnhancedCelestialsPresent()) return false;
 
-        EnhancedCelestialsContext lunarContext = ((EnhancedCelestialsWorldData) world).getLunarContext();
+        Optional<EnhancedCelestialsLunarForecastWorldData> optData = EnhancedCelestials.lunarForecastWorldData(world);
 
-        if (lunarContext == null) return false;
+        if (optData.isEmpty()) return false;
 
-        return lunarContext.getLunarForecast().getCurrentEventRaw().getKey().isPresent()
-                && lunarContext.getLunarForecast().getCurrentEventRaw().getKey().get() == DefaultLunarEvents.BLOOD_MOON;
+        EnhancedCelestialsLunarForecastWorldData data = optData.get();
+
+        return data.currentLunarEventHolder().getKey().isPresent()
+                && data.currentLunarEventHolder().getKey().get() == DefaultLunarEvents.BLOOD_MOON;
     }
 
     public static boolean isSuperBloodMoon(World world) {
         if (!isEnhancedCelestialsPresent()) return false;
 
-        EnhancedCelestialsContext lunarContext = ((EnhancedCelestialsWorldData) world).getLunarContext();
+        Optional<EnhancedCelestialsLunarForecastWorldData> optData = EnhancedCelestials.lunarForecastWorldData(world);
 
-        if (lunarContext == null) return false;
+        if (optData.isEmpty()) return false;
 
-        return lunarContext.getLunarForecast().getCurrentEventRaw().getKey().isPresent()
-                && lunarContext.getLunarForecast().getCurrentEventRaw().getKey().get() == DefaultLunarEvents.SUPER_BLOOD_MOON;
+        EnhancedCelestialsLunarForecastWorldData data = optData.get();
+
+        return data.currentLunarEventHolder().getKey().isPresent()
+                && data.currentLunarEventHolder().getKey().get() == DefaultLunarEvents.SUPER_BLOOD_MOON;
     }
 
     /**
