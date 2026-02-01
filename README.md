@@ -1,3 +1,5 @@
+# This repository was moved to [Codeberg](https://codeberg.org/zenolth/man-from-the-fog-reimagined)
+
 # Man From The Fog
 Mod which adds a creepy creature, which stalks you in the night and preys on you.
 ## What does it do?
